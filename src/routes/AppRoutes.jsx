@@ -5,7 +5,7 @@ import ProtectedRoute from '../auth/ProtectedRoute'
 import Login from '../pages/Login'
 import Dashboard from '../pages/Dashboard'
 import Properties from '../pages/Properties'
-import PropertyDetails from '../pages/PropertyDetails'
+import PropertyDetailsPanel from '../pages/PropertyDetailsPanel'
 import Tenants from '../pages/Tenants'
 import Payments from '../pages/Payments'
 import Reports from '../pages/Reports'
@@ -19,8 +19,19 @@ export default function AppRoutes() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/properties" element={<ProtectedRoute><Properties /></ProtectedRoute>} />
-          <Route path="/properties/:id" element={<ProtectedRoute><PropertyDetails /></ProtectedRoute>} />
+          <Route path="/properties" element={<ProtectedRoute><Properties /></ProtectedRoute>}>
+            <Route
+              index
+              element={
+                <div className="properties-detail-pane">
+                  <div className="properties-detail-empty">
+                    <p>Select a property to view details</p>
+                  </div>
+                </div>
+              }
+            />
+            <Route path=":id" element={<PropertyDetailsPanel />} />
+          </Route>
           <Route path="/tenants" element={<ProtectedRoute><Tenants /></ProtectedRoute>} />
           <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />

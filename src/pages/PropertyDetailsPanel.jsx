@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import MainLayout from '../layouts/MainLayout'
+import { useParams } from 'react-router-dom'
 import { fetchProperty, fetchPayments } from '../services/api'
 import { tenantDetailsMap } from '../data/tenantDetails'
 
-export default function PropertyDetails() {
+export default function PropertyDetailsPanel() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const [property, setProperty] = useState(null)
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -15,6 +13,7 @@ export default function PropertyDetails() {
 
   useEffect(() => {
     setLoading(true)
+    setError('')
     Promise.all([fetchProperty(id), fetchPayments()])
       .then(([propertyData, paymentData]) => {
         setProperty(propertyData)
@@ -29,31 +28,21 @@ export default function PropertyDetails() {
 
   if (loading) {
     return (
-      <MainLayout>
-        <div className="page-header">
-          <div>
-            <h2>Loading property...</h2>
-          </div>
+      <div className="properties-detail-pane">
+        <div className="properties-detail-empty">
+          <p>Loading property...</p>
         </div>
-      </MainLayout>
+      </div>
     )
   }
 
   if (error || !property) {
     return (
-      <MainLayout>
-        <div className="page-header">
-          <div>
-            <h2>Property details</h2>
-            <p>{error || 'This property was not found.'}</p>
-          </div>
+      <div className="properties-detail-pane">
+        <div className="properties-detail-empty">
+          <p>{error || 'This property was not found.'}</p>
         </div>
-        <div className="card">
-          <button className="secondary-button" type="button" onClick={() => navigate('/properties')}>
-            Back to properties
-          </button>
-        </div>
-      </MainLayout>
+      </div>
     )
   }
 
@@ -73,15 +62,15 @@ export default function PropertyDetails() {
   const statusClass = position >= 0 ? 'status-paid' : 'status-overdue'
 
   return (
-    <MainLayout>
-      <div className="page-header">
+    <div className="properties-detail-pane">
+      <div className="property-detail-header">
         <div>
           <h2>{property.title}</h2>
-          <p>Property address, value, lease details and tenant financial status in one page.</p>
+          <p className="property-detail-address">{property.address}</p>
         </div>
-        <button className="secondary-button" type="button" onClick={() => navigate('/properties')}>
-          Back to properties
-        </button>
+        <span className={`status-badge ${property.status === 'Leased' ? 'status-paid' : property.status === 'Available' ? 'status-due' : 'status-overdue'}`}>
+          {property.status}
+        </span>
       </div>
 
       <div className="property-list">
@@ -90,21 +79,6 @@ export default function PropertyDetails() {
             {property.imageUrl ? <img src={property.imageUrl} alt={property.title} /> : <div className="property-image-placeholder">{property.type}</div>}
           </div>
           <div className="property-info">
-            <div className="property-title-row">
-              <div>
-                <h4>{property.title}</h4>
-                <p className="property-address">{property.address}</p>
-              </div>
-              <span className={`status-badge ${property.status === 'Leased' ? 'status-paid' : property.status === 'Available' ? 'status-due' : 'status-overdue'}`}>
-                {property.status}
-              </span>
-            </div>
-
-            <div className="tenant-description">
-              <p className="muted-text">{property.title} — {property.address}</p>
-              <p><strong>Lease start:</strong> {tenantInfo?.leaseStart || 'N/A'}</p>
-            </div>
-
             <div className="property-meta-grid">
               <div>
                 <span className="meta-label">Type</span>
@@ -214,6 +188,6 @@ export default function PropertyDetails() {
           <p className="muted-text">This property does not have a linked tenant contract yet.</p>
         )}
       </div>
-    </MainLayout>
+    </div>
   )
 }

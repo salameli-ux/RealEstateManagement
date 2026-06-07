@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import { fetchProperties, createProperty, updateProperty, deleteProperty } from '../services/api'
-import { tenantDetailsMap } from '../data/tenantDetails'
 
 const initialProperties = [
   {
@@ -289,6 +288,12 @@ export default function Properties() {
     }
   }
 
+  const sortedProperties = [...properties].sort((a, b) =>
+    (a.address || '').localeCompare(b.address || '', undefined, { sensitivity: 'base' })
+  )
+
+  const isOccupied = (status) => !['Available', 'Vacant'].includes(status)
+
   return (
     <MainLayout>
       {showForm && (
@@ -373,34 +378,30 @@ export default function Properties() {
       </form>
       )}
 
-      <div className="property-list">
-        {properties.map((property) => {
-          const ownerName = tenantDetailsMap[property.title]?.name || 'Unassigned'
-          return (
-            <Link key={property.id} to={`/properties/${property.id}`} className="property-item property-item-link">
-              <div className="property-item-summary">
-                <div className="property-item-main">
-                  {property.imageUrl?.trim() ? (
-                    <div className="property-item-thumb" style={{ backgroundImage: `url(${property.imageUrl})` }} />
-                  ) : (
-                    <div className="property-item-thumb property-item-thumb-icon">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22" aria-hidden="true">
-                        <path d="M3 10.5L12 3l9 7.5" />
-                        <path d="M5 10.5v8.5h5V14h4v5h5v-8.5" />
-                      </svg>
-                    </div>
-                  )}
-                  <div>
-                    <p className="property-item-line">{property.address} — {ownerName}</p>
+      <div className="properties-split">
+        <aside className="properties-list-pane">
+          <div className="contact-list">
+            <div className="contact-group">
+              {sortedProperties.map((property) => (
+                <NavLink
+                  key={property.id}
+                  to={`/properties/${property.id}`}
+                  className={({ isActive }) => `contact-row${isActive ? ' active' : ''}`}
+                >
+                  <span
+                    className={`contact-status-dot ${isOccupied(property.status) ? 'occupied' : 'vacant'}`}
+                    aria-label={isOccupied(property.status) ? 'Occupied' : 'Vacant'}
+                  />
+                  <div className="contact-row-body">
+                    <span className="contact-row-title">{property.address}</span>
                   </div>
-                </div>
-                <span className={`status-badge ${property.status === 'Leased' ? 'status-paid' : property.status === 'Available' ? 'status-due' : 'status-overdue'}`}>
-                  {property.status}
-                </span>
-              </div>
-            </Link>
-          )
-        })}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        <Outlet />
       </div>
     </MainLayout>
   )

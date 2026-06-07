@@ -20,6 +20,8 @@ const initialProperties = [
     rent: 3250,
     beds: 4,
     baths: 2,
+    ownerName: 'Robert Chen',
+    ownerTaxId: '123-45-6789',
   },
   {
     id: 2,
@@ -37,6 +39,8 @@ const initialProperties = [
     rent: 2100,
     beds: 2,
     baths: 2,
+    ownerName: 'Sunrise Holdings LLC',
+    ownerTaxId: '87-6543210',
   },
   {
     id: 3,
@@ -54,6 +58,8 @@ const initialProperties = [
     rent: 2880,
     beds: 3,
     baths: 2,
+    ownerName: 'Patricia Williams',
+    ownerTaxId: '912-34-5678',
   },
 ]
 
@@ -71,7 +77,14 @@ const defaultForm = {
   rent: '',
   beds: '',
   baths: '',
+  ownerName: '',
+  ownerTaxId: '',
 }
+
+const statusBadgeClass = (status) =>
+  status === 'Leased' ? 'status-paid' : status === 'Available' ? 'status-due' : 'status-overdue'
+
+const isOccupiedStatus = (status) => !['Available', 'Vacant'].includes(status)
 
 const zillowImagePool = [
   'https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=640&q=80',
@@ -133,11 +146,19 @@ export default function Properties() {
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
+    let active = true
+
     fetchProperties()
-      .then(setProperties)
+      .then((data) => {
+        if (active) setProperties(data)
+      })
       .catch((error) => {
         console.error('Failed to load properties', error)
       })
+
+    return () => {
+      active = false
+    }
   }, [])
   const formRef = useRef(null)
 
@@ -146,11 +167,27 @@ export default function Properties() {
       setShowForm(true)
       setEditingId(null)
       setFormState(defaultForm)
+      setTimeout(() => {
+        if (formRef.current) {
+          const titleInput = formRef.current.querySelector('input[name="title"]')
+          if (titleInput) titleInput.focus()
+        }
+      }, 80)
+    }
+
+    const openEditPropertyForm = (event) => {
+      const id = Number(event.detail?.id)
+      const property = properties.find((item) => Number(item.id) === id)
+      if (property) startEditProperty(property)
     }
 
     window.addEventListener('open-add-property-form', openPropertyForm)
-    return () => window.removeEventListener('open-add-property-form', openPropertyForm)
-  }, [])
+    window.addEventListener('open-edit-property-form', openEditPropertyForm)
+    return () => {
+      window.removeEventListener('open-add-property-form', openPropertyForm)
+      window.removeEventListener('open-edit-property-form', openEditPropertyForm)
+    }
+  }, [properties])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -172,16 +209,15 @@ export default function Properties() {
       rent: property.rent,
       beds: property.beds,
       baths: property.baths,
+      ownerName: property.ownerName || '',
+      ownerTaxId: property.ownerTaxId || '',
     })
     setEditingId(property.id)
     setShowForm(true)
     setTimeout(() => {
       if (formRef.current) {
-        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
         const titleInput = formRef.current.querySelector('input[name="title"]')
         if (titleInput) titleInput.focus()
-      } else if (typeof window !== 'undefined') {
-        window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     }, 80)
   }
@@ -194,29 +230,37 @@ export default function Properties() {
 
   const handleAddProperty = async (event) => {
     event.preventDefault()
-    const priceValue = Number(formState.price) || 450000
-    const zillowData = mockZillowLookup({ title: formState.title, address: formState.address, price: priceValue })
+    const existing = editingId ? properties.find((item) => Number(item.id) === Number(editingId)) : null
+    const priceValue = Number(formState.price) || existing?.price || 450000
+    const zillowData = existing
+      ? null
+      : mockZillowLookup({ title: formState.title, address: formState.address, price: priceValue })
     const payload = {
-      title: formState.title.trim() || 'New Property',
-      address: formState.address.trim() || 'Unknown address',
-      imageUrl: formState.imageUrl.trim() || zillowData.imageUrl,
-      type: formState.type || zillowData.type,
+      title: formState.title.trim() || existing?.title || 'New Property',
+      address: formState.address.trim() || existing?.address || 'Unknown address',
+      imageUrl: formState.imageUrl.trim() || existing?.imageUrl || zillowData?.imageUrl,
+      type: formState.type || existing?.type || zillowData?.type,
       price: priceValue,
-      purchasePrice: Number(formState.purchasePrice) || zillowData.purchasePrice,
-      purchaseDate: formState.purchaseDate || zillowData.purchaseDate,
-      zillowEstimate: Number(formState.zillowEstimate) || zillowData.zillowEstimate,
-      currentValue: zillowData.currentValue,
-      yield: Number(formState.yield) || zillowData.yield,
+      purchasePrice: Number(formState.purchasePrice) || existing?.purchasePrice || zillowData?.purchasePrice,
+      purchaseDate: formState.purchaseDate || existing?.purchaseDate || zillowData?.purchaseDate,
+      zillowEstimate: Number(formState.zillowEstimate) || existing?.zillowEstimate || zillowData?.zillowEstimate,
+      currentValue: existing?.currentValue ?? zillowData?.currentValue,
+      yield: Number(formState.yield) || existing?.yield || zillowData?.yield,
       status: formState.status || 'Available',
       rent: Number(formState.rent) || 0,
       beds: Number(formState.beds) || 0,
       baths: Number(formState.baths) || 0,
+      ownerName: formState.ownerName.trim() || existing?.ownerName || '',
+      ownerTaxId: formState.ownerTaxId.trim() || existing?.ownerTaxId || '',
     }
 
     try {
       if (editingId) {
         const updated = await updateProperty(editingId, payload)
-        setProperties((prev) => prev.map((prop) => (prop.id === editingId ? updated : prop)))
+        setProperties((prev) =>
+          prev.map((prop) => (Number(prop.id) === Number(editingId) ? updated : prop))
+        )
+        window.dispatchEvent(new CustomEvent('property-updated', { detail: { property: updated } }))
       } else {
         const created = await createProperty(payload)
         setProperties((prev) => [created, ...prev])
@@ -292,56 +336,73 @@ export default function Properties() {
     (a.address || '').localeCompare(b.address || '', undefined, { sensitivity: 'base' })
   )
 
-  const isOccupied = (status) => !['Available', 'Vacant'].includes(status)
+  const propertyForm = (
+    <div className="properties-detail-pane">
+      {editingId && (
+        <div className="property-detail-header">
+          <span className={`status-badge ${statusBadgeClass(formState.status)}`}>
+            {formState.status}
+          </span>
+          <h2>{formState.address}</h2>
+        </div>
+      )}
 
-  return (
-    <MainLayout>
-      {showForm && (
-        <form ref={formRef} className="property-form card" onSubmit={handleAddProperty}>
-          <h3>{editingId ? 'Edit property' : 'Add new property'}</h3>
-          <div className="form-grid property-form-grid">
-          <div className="form-group">
-            <label>Property name</label>
-            <input name="title" value={formState.title} onChange={handleChange} placeholder="e.g. Brooklyn Townhouse" />
-          </div>
+      <form ref={formRef} className="property-form property-form-panel card" onSubmit={handleAddProperty}>
+        {!editingId && <h3>Add new property</h3>}
+        <div className="form-grid property-form-grid">
+        <div className="form-group">
+          <label>Property name</label>
+          <input name="title" value={formState.title} onChange={handleChange} placeholder="e.g. Brooklyn Townhouse" />
+        </div>
+        {!editingId && (
           <div className="form-group">
             <label>Address</label>
             <input name="address" value={formState.address} onChange={handleChange} placeholder="Street, City, State" />
           </div>
-          <div className="form-group">
-            <label>Image URL</label>
-            <input name="imageUrl" value={formState.imageUrl} onChange={handleChange} placeholder="https://..." />
-          </div>
-          <div className="form-group">
-            <label>Property type</label>
-            <select name="type" value={formState.type} onChange={handleChange}>
-              <option>Single Family</option>
-              <option>Condo</option>
-              <option>Townhome</option>
-              <option>Duplex</option>
-              <option>Multi-family</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Market price</label>
-            <input name="price" value={formState.price} onChange={handleChange} placeholder="450000" />
-          </div>
-          <div className="form-group">
-            <label>Purchase price</label>
-            <input name="purchasePrice" value={formState.purchasePrice} onChange={handleChange} placeholder="420000" />
-          </div>
-          <div className="form-group">
-            <label>Purchase date</label>
-            <input name="purchaseDate" value={formState.purchaseDate} onChange={handleChange} placeholder="YYYY-MM-DD" />
-          </div>
-          <div className="form-group">
-            <label>Zillow estimate</label>
-            <input name="zillowEstimate" value={formState.zillowEstimate} onChange={handleChange} placeholder="460000" />
-          </div>
-          <div className="form-group">
-            <label>Yield (%)</label>
-            <input name="yield" value={formState.yield} onChange={handleChange} placeholder="5.6" />
-          </div>
+        )}
+        <div className="form-group">
+          <label>Owner name</label>
+          <input name="ownerName" value={formState.ownerName} onChange={handleChange} placeholder="e.g. Robert Chen" />
+        </div>
+        <div className="form-group">
+          <label>SSN / ITIN / EIN</label>
+          <input name="ownerTaxId" value={formState.ownerTaxId} onChange={handleChange} placeholder="123-45-6789" />
+        </div>
+        <div className="form-group">
+          <label>Image URL</label>
+          <input name="imageUrl" value={formState.imageUrl} onChange={handleChange} placeholder="https://..." />
+        </div>
+        <div className="form-group">
+          <label>Property type</label>
+          <select name="type" value={formState.type} onChange={handleChange}>
+            <option>Single Family</option>
+            <option>Condo</option>
+            <option>Townhome</option>
+            <option>Duplex</option>
+            <option>Multi-family</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label>Market price</label>
+          <input name="price" value={formState.price} onChange={handleChange} placeholder="450000" />
+        </div>
+        <div className="form-group">
+          <label>Purchase price</label>
+          <input name="purchasePrice" value={formState.purchasePrice} onChange={handleChange} placeholder="420000" />
+        </div>
+        <div className="form-group">
+          <label>Purchase date</label>
+          <input name="purchaseDate" value={formState.purchaseDate} onChange={handleChange} placeholder="YYYY-MM-DD" />
+        </div>
+        <div className="form-group">
+          <label>Zillow estimate</label>
+          <input name="zillowEstimate" value={formState.zillowEstimate} onChange={handleChange} placeholder="460000" />
+        </div>
+        <div className="form-group">
+          <label>Yield (%)</label>
+          <input name="yield" value={formState.yield} onChange={handleChange} placeholder="5.6" />
+        </div>
+        {!editingId && (
           <div className="form-group">
             <label>Rental status</label>
             <select name="status" value={formState.status} onChange={handleChange}>
@@ -351,35 +412,40 @@ export default function Properties() {
               <option>Vacant</option>
             </select>
           </div>
-          <div className="form-group">
-            <label>Rent per month</label>
-            <input name="rent" value={formState.rent} onChange={handleChange} placeholder="3200" />
-          </div>
-          <div className="form-group">
-            <label>Beds</label>
-            <input name="beds" value={formState.beds} onChange={handleChange} placeholder="3" />
-          </div>
-          <div className="form-group">
-            <label>Baths</label>
-            <input name="baths" value={formState.baths} onChange={handleChange} placeholder="2" />
-          </div>
+        )}
+        <div className="form-group">
+          <label>Rent per month</label>
+          <input name="rent" value={formState.rent} onChange={handleChange} placeholder="3200" />
         </div>
-
-        <div className="form-actions">
-          <button className="primary-button" type="submit">
-            {editingId ? 'Save changes' : 'Add property'}
-          </button>
-          {editingId ? (
-            <button className="secondary-button" type="button" onClick={handleCancelEdit}>
-              Cancel
-            </button>
-          ) : null}
+        <div className="form-group">
+          <label>Beds</label>
+          <input name="beds" value={formState.beds} onChange={handleChange} placeholder="3" />
         </div>
-      </form>
-      )}
+        <div className="form-group">
+          <label>Baths</label>
+          <input name="baths" value={formState.baths} onChange={handleChange} placeholder="2" />
+        </div>
+      </div>
 
+      <div className="form-actions">
+        <button className="primary-button" type="submit">
+          {editingId ? 'Save changes' : 'Add property'}
+        </button>
+        <button className="secondary-button" type="button" onClick={handleCancelEdit}>
+          Cancel
+        </button>
+      </div>
+    </form>
+    </div>
+  )
+
+  return (
+    <MainLayout>
       <div className="properties-split">
         <aside className="properties-list-pane">
+          <div className="properties-list-search">
+            <input placeholder="Search properties..." />
+          </div>
           <div className="contact-list">
             <div className="contact-group">
               {sortedProperties.map((property) => (
@@ -389,8 +455,8 @@ export default function Properties() {
                   className={({ isActive }) => `contact-row${isActive ? ' active' : ''}`}
                 >
                   <span
-                    className={`contact-status-dot ${isOccupied(property.status) ? 'occupied' : 'vacant'}`}
-                    aria-label={isOccupied(property.status) ? 'Occupied' : 'Vacant'}
+                    className={`contact-status-dot ${isOccupiedStatus(property.status) ? 'occupied' : 'vacant'}`}
+                    aria-label={isOccupiedStatus(property.status) ? 'Occupied' : 'Vacant'}
                   />
                   <div className="contact-row-body">
                     <span className="contact-row-title">{property.address}</span>
@@ -401,7 +467,7 @@ export default function Properties() {
           </div>
         </aside>
 
-        <Outlet />
+        {showForm ? propertyForm : <Outlet />}
       </div>
     </MainLayout>
   )

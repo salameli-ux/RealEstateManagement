@@ -41,7 +41,9 @@ CREATE TABLE IF NOT EXISTS properties (
   status TEXT,
   rent INTEGER,
   beds INTEGER,
-  baths INTEGER
+  baths INTEGER,
+  ownerName TEXT,
+  ownerTaxId TEXT
 );
 
 CREATE TABLE IF NOT EXISTS tenants (
@@ -82,12 +84,32 @@ if (!paymentColumns.includes('invoiceNumber')) {
   db.prepare('ALTER TABLE payments ADD COLUMN invoiceNumber TEXT').run()
 }
 
+const propertyColumns = db.prepare('PRAGMA table_info(properties)').all().map((row) => row.name)
+if (!propertyColumns.includes('ownerName')) {
+  db.prepare('ALTER TABLE properties ADD COLUMN ownerName TEXT').run()
+}
+if (!propertyColumns.includes('ownerTaxId')) {
+  db.prepare('ALTER TABLE properties ADD COLUMN ownerTaxId TEXT').run()
+}
+
+const seedOwnersByTitle = {
+  'Atlanta Duplex': { ownerName: 'Robert Chen', ownerTaxId: '123-45-6789' },
+  'Miami Condo': { ownerName: 'Sunrise Holdings LLC', ownerTaxId: '87-6543210' },
+  'Chicago Townhome': { ownerName: 'Patricia Williams', ownerTaxId: '912-34-5678' },
+}
+
+const propertiesMissingOwner = db.prepare("SELECT id, title FROM properties WHERE ownerName IS NULL OR ownerName = ''").all()
+for (const property of propertiesMissingOwner) {
+  const owner = seedOwnersByTitle[property.title] || { ownerName: 'Demo Owner', ownerTaxId: '000-00-0000' }
+  db.prepare('UPDATE properties SET ownerName = ?, ownerTaxId = ? WHERE id = ?').run(owner.ownerName, owner.ownerTaxId, property.id)
+}
+
 const propertyCount = db.prepare('SELECT COUNT(*) as count FROM properties').get().count
 if (propertyCount === 0) {
-  const stmt = db.prepare(`INSERT INTO properties (title, address, imageUrl, type, price, purchasePrice, purchaseDate, currentValue, zillowEstimate, yield, status, rent, beds, baths) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-  stmt.run('Atlanta Duplex', '245 Peachtree St, Atlanta, GA', 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80', 'Duplex', 540000, 495000, '2018-03-22', 610000, 560000, 5.7, 'Leased', 3250, 4, 2)
-  stmt.run('Miami Condo', '18 Ocean Drive, Miami, FL', 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=800&q=80', 'Condo', 420000, 385000, '2020-05-10', 455000, 430000, 6.0, 'Available', 2100, 2, 2)
-  stmt.run('Chicago Townhome', '790 Lakeview Ave, Chicago, IL', 'https://images.unsplash.com/photo-1494527494455-0f29a669841a?auto=format&fit=crop&w=800&q=80', 'Townhome', 470000, 430000, '2019-09-15', 505000, 485000, 5.8, 'Renewal', 2880, 3, 2)
+  const stmt = db.prepare(`INSERT INTO properties (title, address, imageUrl, type, price, purchasePrice, purchaseDate, currentValue, zillowEstimate, yield, status, rent, beds, baths, ownerName, ownerTaxId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+  stmt.run('Atlanta Duplex', '245 Peachtree St, Atlanta, GA', 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80', 'Duplex', 540000, 495000, '2018-03-22', 610000, 560000, 5.7, 'Leased', 3250, 4, 2, 'Robert Chen', '123-45-6789')
+  stmt.run('Miami Condo', '18 Ocean Drive, Miami, FL', 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=800&q=80', 'Condo', 420000, 385000, '2020-05-10', 455000, 430000, 6.0, 'Available', 2100, 2, 2, 'Sunrise Holdings LLC', '87-6543210')
+  stmt.run('Chicago Townhome', '790 Lakeview Ave, Chicago, IL', 'https://images.unsplash.com/photo-1494527494455-0f29a669841a?auto=format&fit=crop&w=800&q=80', 'Townhome', 470000, 430000, '2019-09-15', 505000, 485000, 5.8, 'Renewal', 2880, 3, 2, 'Patricia Williams', '912-34-5678')
 }
 
 const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count

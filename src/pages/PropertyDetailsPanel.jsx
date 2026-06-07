@@ -26,6 +26,18 @@ export default function PropertyDetailsPanel() {
       .finally(() => setLoading(false))
   }, [id])
 
+  useEffect(() => {
+    const onPropertyUpdated = (event) => {
+      const updated = event.detail?.property
+      if (updated && String(updated.id) === String(id)) {
+        setProperty(updated)
+      }
+    }
+
+    window.addEventListener('property-updated', onPropertyUpdated)
+    return () => window.removeEventListener('property-updated', onPropertyUpdated)
+  }, [id])
+
   if (loading) {
     return (
       <div className="properties-detail-pane">
@@ -64,22 +76,27 @@ export default function PropertyDetailsPanel() {
   return (
     <div className="properties-detail-pane">
       <div className="property-detail-header">
-        <div>
-          <h2>{property.title}</h2>
-          <p className="property-detail-address">{property.address}</p>
-        </div>
         <span className={`status-badge ${property.status === 'Leased' ? 'status-paid' : property.status === 'Available' ? 'status-due' : 'status-overdue'}`}>
           {property.status}
         </span>
+        <h2>{property.address}</h2>
       </div>
 
       <div className="property-list">
         <div className="property-card card">
           <div className="property-media">
-            {property.imageUrl ? <img src={property.imageUrl} alt={property.title} /> : <div className="property-image-placeholder">{property.type}</div>}
+            {property.imageUrl ? <img src={property.imageUrl} alt={property.address} /> : <div className="property-image-placeholder">{property.type}</div>}
           </div>
           <div className="property-info">
             <div className="property-meta-grid">
+              <div>
+                <span className="meta-label">Owner</span>
+                <p>{property.ownerName || '—'}</p>
+              </div>
+              <div>
+                <span className="meta-label">SSN / ITIN / EIN</span>
+                <p>{property.ownerTaxId || '—'}</p>
+              </div>
               <div>
                 <span className="meta-label">Type</span>
                 <p>{property.type}</p>
@@ -96,8 +113,6 @@ export default function PropertyDetailsPanel() {
                 <span className="meta-label">Beds</span>
                 <p>{property.beds}</p>
               </div>
-            </div>
-            <div className="property-meta-grid">
               <div>
                 <span className="meta-label">Purchase date</span>
                 <p>{property.purchaseDate || 'N/A'}</p>

@@ -30,9 +30,11 @@ router.post('/', (req, res) => {
     rent,
     beds,
     baths,
+    ownerName,
+    ownerTaxId,
   } = req.body
 
-  const stmt = db.prepare(`INSERT INTO properties (title, address, imageUrl, type, price, purchasePrice, purchaseDate, currentValue, zillowEstimate, yield, status, rent, beds, baths) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+  const stmt = db.prepare(`INSERT INTO properties (title, address, imageUrl, type, price, purchasePrice, purchaseDate, currentValue, zillowEstimate, yield, status, rent, beds, baths, ownerName, ownerTaxId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
   const info = stmt.run(
     title,
     address,
@@ -47,7 +49,9 @@ router.post('/', (req, res) => {
     status || 'Available',
     rent || 0,
     beds || 0,
-    baths || 0
+    baths || 0,
+    ownerName || '',
+    ownerTaxId || ''
   )
   const property = db.prepare('SELECT * FROM properties WHERE id = ?').get(info.lastInsertRowid)
   res.status(201).json(property)
@@ -73,9 +77,11 @@ router.put('/:id', (req, res) => {
     rent,
     beds,
     baths,
+    ownerName,
+    ownerTaxId,
   } = req.body
 
-  db.prepare(`UPDATE properties SET title = ?, address = ?, imageUrl = ?, type = ?, price = ?, purchasePrice = ?, purchaseDate = ?, currentValue = ?, zillowEstimate = ?, yield = ?, status = ?, rent = ?, beds = ?, baths = ? WHERE id = ?`).run(
+  db.prepare(`UPDATE properties SET title = ?, address = ?, imageUrl = ?, type = ?, price = ?, purchasePrice = ?, purchaseDate = ?, currentValue = ?, zillowEstimate = ?, yield = ?, status = ?, rent = ?, beds = ?, baths = ?, ownerName = ?, ownerTaxId = ? WHERE id = ?`).run(
     title,
     address,
     imageUrl,
@@ -90,6 +96,8 @@ router.put('/:id', (req, res) => {
     rent || 0,
     beds || 0,
     baths || 0,
+    ownerName || '',
+    ownerTaxId || '',
     id
   )
 

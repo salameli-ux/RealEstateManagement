@@ -5,7 +5,19 @@ import { formatTenant } from '../tenantFormat.js'
 const router = express.Router()
 
 router.get('/', (req, res) => {
-  const properties = db.prepare('SELECT * FROM properties ORDER BY id DESC').all()
+  const properties = db
+    .prepare(`
+      SELECT p.*,
+        (SELECT COUNT(*) FROM tenants t WHERE t.propertyId = p.id AND t.isCurrent = 1) AS currentTenantCount
+      FROM properties p
+      ORDER BY p.id DESC
+    `)
+    .all()
+    .map(({ currentTenantCount, ...property }) => ({
+      ...property,
+      currentTenantCount,
+      hasCurrentTenant: currentTenantCount > 0,
+    }))
   res.json(properties)
 })
 
@@ -19,9 +31,17 @@ router.get('/:id/tenants', (req, res) => {
 })
 
 router.get('/:id', (req, res) => {
-  const property = db.prepare('SELECT * FROM properties WHERE id = ?').get(req.params.id)
-  if (!property) return res.status(404).json({ error: 'Property not found' })
-  res.json(property)
+  const row = db
+    .prepare(`
+      SELECT p.*,
+        (SELECT COUNT(*) FROM tenants t WHERE t.propertyId = p.id AND t.isCurrent = 1) AS currentTenantCount
+      FROM properties p
+      WHERE p.id = ?
+    `)
+    .get(req.params.id)
+  if (!row) return res.status(404).json({ error: 'Property not found' })
+  const { currentTenantCount, ...property } = row
+  res.json({ ...property, currentTenantCount, hasCurrentTenant: currentTenantCount > 0 })
 })
 
 router.post('/', (req, res) => {

@@ -92,8 +92,8 @@ export default function PropertyDetailsPanel() {
   return (
     <div className="properties-detail-pane">
       <div className="property-detail-header">
-        <span className={`status-badge ${property.status === 'Leased' ? 'status-paid' : property.status === 'Available' ? 'status-due' : 'status-overdue'}`}>
-          {property.status}
+        <span className={`status-badge ${property.hasCurrentTenant ? (property.status === 'Leased' ? 'status-paid' : 'status-overdue') : 'status-due'}`}>
+          {property.hasCurrentTenant ? property.status : 'Available'}
         </span>
         <h2>{property.address}</h2>
       </div>

@@ -465,4 +465,13 @@ if (miamiProperty && miamiTenant) {
   }
 }
 
+db.prepare(`
+  UPDATE properties
+  SET status = 'Available'
+  WHERE status NOT IN ('Available', 'Vacant')
+    AND id NOT IN (
+      SELECT propertyId FROM tenants WHERE isCurrent = 1 AND propertyId IS NOT NULL
+    )
+`).run()
+
 export default db

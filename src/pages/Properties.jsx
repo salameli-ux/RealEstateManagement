@@ -84,7 +84,12 @@ const defaultForm = {
 const statusBadgeClass = (status) =>
   status === 'Leased' ? 'status-paid' : status === 'Available' ? 'status-due' : 'status-overdue'
 
-const isOccupiedStatus = (status) => !['Available', 'Vacant'].includes(status)
+const isPropertyOccupied = (property) => {
+  if (typeof property.currentTenantCount === 'number') {
+    return property.currentTenantCount > 0
+  }
+  return !['Available', 'Vacant'].includes(property.status)
+}
 
 const zillowImagePool = [
   'https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=640&q=80',
@@ -455,8 +460,8 @@ export default function Properties() {
                   className={({ isActive }) => `contact-row${isActive ? ' active' : ''}`}
                 >
                   <span
-                    className={`contact-status-dot ${isOccupiedStatus(property.status) ? 'occupied' : 'vacant'}`}
-                    aria-label={isOccupiedStatus(property.status) ? 'Occupied' : 'Vacant'}
+                    className={`contact-status-dot ${isPropertyOccupied(property) ? 'occupied' : 'vacant'}`}
+                    aria-label={isPropertyOccupied(property) ? 'Occupied' : 'Vacant'}
                   />
                   <div className="contact-row-body">
                     <span className="contact-row-title">{property.address}</span>

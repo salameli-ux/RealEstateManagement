@@ -44,3 +44,6 @@ export const fetchPayment = (id) => request(`/payments/${id}`)
 export const createPayment = (payment) => request('/payments', { method: 'POST', body: payment })
 export const updatePayment = (id, payment) => request(`/payments/${id}`, { method: 'PUT', body: payment })
 export const deletePayment = (id) => request(`/payments/${id}`, { method: 'DELETE' })
+
+export const fetchPmAccount = () => request('/pm-account')
+export const submitRentTransfer = (payload) => request('/rent-transfer', { method: 'POST', body: payload })

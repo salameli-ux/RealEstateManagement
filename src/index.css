@@ -1287,7 +1287,8 @@ tbody td {
 .properties-detail-pane .owner-ledger-header span:nth-child(5),
 .properties-detail-pane .owner-ledger-header span:nth-child(6),
 .properties-detail-pane .owner-ledger-sum,
-.properties-detail-pane .owner-ledger-balance {
+.properties-detail-pane .owner-ledger-balance,
+.properties-detail-pane .owner-ledger-status {
   text-align: right;
 }
 
@@ -1359,6 +1360,14 @@ tbody td {
 .properties-detail-pane .owner-ledger-balance {
   font-weight: 700;
   color: #f8fafc;
+  font-variant-numeric: tabular-nums;
+}
+
+.properties-detail-pane .owner-ledger-status {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1521,115 +1530,6 @@ tbody td {
 .ledger-documents-open {
   font-size: 0.78rem;
   color: #60a5fa;
-}
-
-.properties-detail-pane .owner-mgmt-summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #0f172a;
-  border: 1px solid rgba(74, 222, 128, 0.3);
-}
-
-.properties-detail-pane .owner-mgmt-summary-label {
-  display: block;
-  font-size: 0.82rem;
-  color: #94a3b8;
-  margin-bottom: 2px;
-}
-
-.properties-detail-pane .owner-mgmt-summary-value {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #4ade80;
-}
-
-.properties-detail-pane .owner-mgmt-pending {
-  font-size: 0.84rem;
-  color: #fbbf24;
-}
-
-.properties-detail-pane .owner-mgmt-month-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.properties-detail-pane .owner-mgmt-month-item {
-  border-radius: 12px;
-  background: #334155;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  overflow: hidden;
-}
-
-.properties-detail-pane .owner-mgmt-month-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  background: rgba(15, 23, 42, 0.45);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-}
-
-.properties-detail-pane .owner-mgmt-month-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #f8fafc;
-}
-
-.properties-detail-pane .owner-mgmt-month-total {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #4ade80;
-}
-
-.properties-detail-pane .owner-mgmt-fee-list {
-  list-style: none;
-  margin: 0;
-  padding: 8px 12px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.properties-detail-pane .owner-mgmt-fee-item {
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-}
-
-.properties-detail-pane .owner-mgmt-fee-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.properties-detail-pane .owner-mgmt-fee-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #e2e8f0;
-}
-
-.properties-detail-pane .owner-mgmt-fee-desc {
-  margin: 4px 0 2px;
-  font-size: 0.82rem;
-  color: #cbd5e1;
-}
-
-.properties-detail-pane .owner-mgmt-fee-date {
-  font-size: 0.78rem;
-  color: #94a3b8;
 }
 
 .properties-detail-pane .owner-ledger-meta {
@@ -2836,6 +2736,24 @@ tbody td {
   color: #e2e8f0;
 }
 
+.properties-list-pane .tenant-list-row:not(:last-child)::after {
+  left: 14px;
+}
+
+.properties-list-pane .tenant-list-row-filtered {
+  display: none;
+}
+
+.properties-list-pane .tenant-list-row.active {
+  background: #cbd5e1;
+  box-shadow: inset 5px 0 0 #2563eb;
+}
+
+.properties-list-pane .tenant-list-row.active .contact-row-title {
+  color: #0f172a;
+  font-weight: 700;
+}
+
 .properties-list-pane .contact-row-subtitle {
   font-size: 0.78rem;
 }
@@ -2876,5 +2794,568 @@ tbody td {
 
   .main-content {
     margin-left: 0;
+  }
+}
+
+.ach-detail-pane-single {
+  max-width: 980px;
+}
+
+.ach-list-heading {
+  margin: 0 0 10px;
+  padding: 0 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.ach-tenant-row {
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.ach-tenant-row .contact-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ach-tenant-row .status-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+}
+
+.ach-tenant-list-pane .contact-row-title {
+  color: #e2e8f0;
+}
+
+.ach-tenant-list-pane .contact-row.active .contact-row-title {
+  color: #0f172a;
+}
+
+.ach-tenant-list-pane .contact-row-subtitle,
+.ach-tenant-list-pane .ach-tenant-subline {
+  color: #94a3b8;
+}
+
+.ach-list-empty {
+  padding: 16px;
+  font-size: 0.88rem;
+  color: #94a3b8;
+}
+
+.ach-page-error {
+  margin: 0 0 16px;
+}
+
+.ach-deposit-actions {
+  padding: 18px 20px 20px;
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  margin-bottom: 0;
+}
+
+/* Desktop keeps split layout; mobile gets simplified pay flow */
+.ach-desktop-only {
+  display: grid;
+}
+
+.ach-mobile-only {
+  display: none;
+}
+
+.ach-mobile-pay {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.ach-mobile-tenant-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.ach-mobile-tenant-meta {
+  margin: 4px 0 14px;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.ach-mobile-pay .ach-submit-button {
+  width: 100%;
+  margin-top: 12px;
+}
+
+@media (max-width: 720px) {
+  .ach-desktop-only {
+    display: none;
+  }
+
+  .ach-mobile-only {
+    display: block;
+  }
+}
+
+.ach-deposit-actions-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.ach-deposit-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.ach-tenant-name {
+  margin: 4px 0 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #f8fafc;
+}
+
+.ach-tenant-meta {
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  color: #94a3b8;
+}
+
+.ach-method-tabs {
+  margin-bottom: 14px;
+}
+
+.ach-deposit-actions-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(140px, 180px) 1fr;
+  gap: 12px 14px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.ach-amount-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(96, 165, 250, 0.45);
+  background: #0f172a;
+}
+
+.ach-amount-prefix {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.ach-amount-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: #f8fafc;
+  font-size: 1.35rem;
+  font-weight: 700;
+  outline: none;
+}
+
+.ach-amount-input::placeholder {
+  color: #64748b;
+}
+
+.ach-deposit-actions .ach-deposit-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #94a3b8;
+}
+
+.ach-deposit-actions .ach-deposit-field input[type='date'],
+.ach-deposit-actions .ach-deposit-value {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+}
+
+.ach-deposit-actions .ach-deposit-value {
+  display: flex;
+  align-items: center;
+}
+
+.ach-submit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.ach-submit-note {
+  margin: 0;
+  flex: 1;
+  min-width: 220px;
+  font-size: 0.88rem;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+.ach-submit-button {
+  min-width: 200px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.ach-submit-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ach-deposit-slip {
+  padding: 18px 20px 20px;
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.ach-deposit-slip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.ach-deposit-slip-header h3 {
+  margin: 0 0 4px;
+  color: #f8fafc;
+}
+
+.ach-deposit-slip-header p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #94a3b8;
+}
+
+.ach-demo-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.ach-deposit-section {
+  margin-bottom: 16px;
+}
+
+.ach-deposit-section h4 {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.ach-deposit-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ach-deposit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.ach-deposit-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #94a3b8;
+}
+
+.ach-deposit-value,
+.ach-deposit-field input,
+.ach-deposit-field select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+}
+
+.ach-deposit-value {
+  display: flex;
+  align-items: center;
+}
+
+.ach-deposit-field input:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.55);
+}
+
+.ach-deposit-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ach-deposit-form {
+  padding: 18px 20px;
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.ach-deposit-form select,
+.ach-deposit-form input {
+  width: 100%;
+}
+
+.ach-property-note p {
+  margin: 4px 0 0;
+  color: #e2e8f0;
+}
+
+.ach-success a {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.tenant-portal-detail {
+  min-width: 0;
+}
+
+.tenant-portal-layout .tenant-details-panel {
+  margin-top: 0;
+}
+
+.ach-page-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 300px) 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.ach-tenant-list-pane {
+  width: 100%;
+  min-width: 0;
+}
+
+.ach-tenant-contact-list {
+  max-height: min(70vh, 640px);
+  overflow-y: auto;
+}
+
+.ach-tenant-list-pane .ach-tenant-subline,
+.ach-tenant-subline {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.ach-detail-pane {
+  min-width: 0;
+}
+
+.ach-page-empty {
+  padding: 28px;
+  border-radius: 14px;
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  color: #cbd5e1;
+}
+
+.ach-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ach-detail-header h3 {
+  margin: 0 0 4px;
+  color: #f8fafc;
+}
+
+.ach-detail-header p {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.ach-due-box {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #0f172a;
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  text-align: right;
+}
+
+.ach-due-box strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.35rem;
+  color: #f8fafc;
+}
+
+.ach-transfer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.ach-bank-card {
+  padding: 16px 18px;
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.ach-bank-card-header h4 {
+  margin: 0 0 4px;
+  color: #f8fafc;
+}
+
+.ach-bank-card-header p {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.ach-bank-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.ach-bank-grid .meta-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.ach-bank-grid p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #e2e8f0;
+}
+
+.ach-pay-panel .ach-submit-note {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.ach-pay-panel {
+  padding: 16px 18px 18px;
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.ach-pay-copy {
+  margin: 14px 0;
+  color: #cbd5e1;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.ach-deposit-done {
+  margin-bottom: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+}
+
+.ach-deposit-done strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 1.1rem;
+  color: #4ade80;
+}
+
+.ach-deposit-done p {
+  margin: 0 0 8px;
+  color: #bbf7d0;
+  font-size: 0.92rem;
+}
+
+.ach-deposit-done a {
+  color: #86efac;
+  font-weight: 600;
+}
+
+.ach-success {
+  margin: 0 0 12px;
+  color: #4ade80;
+  font-size: 0.92rem;
+}
+
+.tenant-item-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+@media (max-width: 960px) {
+  .ach-page-layout,
+  .ach-transfer-grid,
+  .ach-deposit-columns,
+  .ach-deposit-grid,
+  .ach-deposit-actions-row {
+    grid-template-columns: 1fr;
   }
 }

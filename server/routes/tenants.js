@@ -1,25 +1,18 @@
 import express from 'express'
 import db from '../db.js'
+import { formatTenant } from '../tenantFormat.js'
 
 const router = express.Router()
 
 router.get('/', (req, res) => {
-  const tenants = db.prepare('SELECT * FROM tenants ORDER BY id DESC').all().map((tenant) => ({
-    ...tenant,
-    documents: tenant.documents ? JSON.parse(tenant.documents) : [],
-    activity: tenant.activity ? JSON.parse(tenant.activity) : [],
-  }))
+  const tenants = db.prepare('SELECT * FROM tenants ORDER BY id DESC').all().map(formatTenant)
   res.json(tenants)
 })
 
 router.get('/:id', (req, res) => {
   const tenant = db.prepare('SELECT * FROM tenants WHERE id = ?').get(req.params.id)
   if (!tenant) return res.status(404).json({ error: 'Tenant not found' })
-  res.json({
-    ...tenant,
-    documents: tenant.documents ? JSON.parse(tenant.documents) : [],
-    activity: tenant.activity ? JSON.parse(tenant.activity) : [],
-  })
+  res.json(formatTenant(tenant))
 })
 
 router.post('/', (req, res) => {
@@ -59,11 +52,7 @@ router.post('/', (req, res) => {
   )
 
   const tenant = db.prepare('SELECT * FROM tenants WHERE id = ?').get(info.lastInsertRowid)
-  res.status(201).json({
-    ...tenant,
-    documents: JSON.parse(tenant.documents || '[]'),
-    activity: JSON.parse(tenant.activity || '[]'),
-  })
+  res.status(201).json(formatTenant(tenant))
 })
 
 router.put('/:id', (req, res) => {
@@ -86,9 +75,23 @@ router.put('/:id', (req, res) => {
     cycle,
     documents,
     activity,
+    bankName,
+    bankAccountType,
+    bankRoutingNumber,
+    bankAccountNumber,
+    bankAccountHolder,
+    cardBrand,
+    cardLast4,
+    cardExpMonth,
+    cardExpYear,
   } = req.body
 
-  db.prepare(`UPDATE tenants SET name = ?, unit = ?, email = ?, phone = ?, taxId = ?, leaseStart = ?, leaseEnd = ?, rent = ?, status = ?, nextDue = ?, contract = ?, cycle = ?, documents = ?, activity = ? WHERE id = ?`).run(
+  db.prepare(`UPDATE tenants SET
+    name = ?, unit = ?, email = ?, phone = ?, taxId = ?, leaseStart = ?, leaseEnd = ?, rent = ?, status = ?, nextDue = ?,
+    contract = ?, cycle = ?, documents = ?, activity = ?,
+    bankName = ?, bankAccountType = ?, bankRoutingNumber = ?, bankAccountNumber = ?, bankAccountHolder = ?,
+    cardBrand = ?, cardLast4 = ?, cardExpMonth = ?, cardExpYear = ?
+    WHERE id = ?`).run(
     name,
     unit,
     email,
@@ -103,15 +106,20 @@ router.put('/:id', (req, res) => {
     cycle || 'Monthly',
     JSON.stringify(documents || []),
     JSON.stringify(activity || []),
+    bankName ?? existing.bankName,
+    bankAccountType ?? existing.bankAccountType,
+    bankRoutingNumber ?? existing.bankRoutingNumber,
+    bankAccountNumber ?? existing.bankAccountNumber,
+    bankAccountHolder ?? existing.bankAccountHolder,
+    cardBrand ?? existing.cardBrand,
+    cardLast4 ?? existing.cardLast4,
+    cardExpMonth ?? existing.cardExpMonth,
+    cardExpYear ?? existing.cardExpYear,
     id
   )
 
   const tenant = db.prepare('SELECT * FROM tenants WHERE id = ?').get(id)
-  res.json({
-    ...tenant,
-    documents: JSON.parse(tenant.documents || '[]'),
-    activity: JSON.parse(tenant.activity || '[]'),
-  })
+  res.json(formatTenant(tenant))
 })
 
 router.delete('/:id', (req, res) => {

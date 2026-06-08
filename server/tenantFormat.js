@@ -1,3 +1,5 @@
+import { formatTenantBank } from './bankFormat.js'
+
 function parseJsonField(value, fallback = []) {
   if (!value) return fallback
   if (Array.isArray(value)) return value
@@ -10,11 +12,19 @@ function parseJsonField(value, fallback = []) {
 
 export function formatTenant(tenant) {
   if (!tenant) return null
+  const {
+    bankRoutingNumber,
+    bankAccountNumber,
+    cardExpMonth,
+    cardExpYear,
+    ...safeTenant
+  } = tenant
   return {
-    ...tenant,
+    ...safeTenant,
     isCurrent: Boolean(tenant.isCurrent),
     documents: parseJsonField(tenant.documents),
     activity: parseJsonField(tenant.activity),
     mailbox: parseJsonField(tenant.mailbox),
+    bank: formatTenantBank(tenant),
   }
 }

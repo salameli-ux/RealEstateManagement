@@ -5,6 +5,11 @@ const RELATED_DOCS_BY_TYPE = {
   Insurance: ['Insurance policy certificate', 'Premium invoice'],
   Tax: ['Property tax bill', 'County assessment notice'],
   Management: ['Management agreement', 'Monthly fee statement'],
+  Monthly: ['Monthly service statement', 'Account administration summary'],
+  Convenience: ['Payment processing receipt', 'ACH fee disclosure'],
+  'Work Order': ['Work order summary', 'Coordination fee invoice', 'Vendor job ticket'],
+  Leasing: ['Leasing agreement excerpt', 'Tenant placement invoice'],
+  Inspection: ['Inspection checklist', 'Move-in report photos'],
   Maintenance: ['Work order', 'Vendor invoice', 'Service completion report'],
   Refund: ['Credit memo', 'Adjustment notice'],
 }

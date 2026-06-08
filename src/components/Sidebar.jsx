@@ -3,7 +3,8 @@ import { NavLink } from 'react-router-dom'
 const links = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/properties', label: 'Properties' },
-  { to: '/tenants', label: 'Tenants' },
+  { to: '/tenant-portal', label: 'Tenants' },
+  { to: '/ach-credit', label: 'ACH / Credit' },
   { to: '/payments', label: 'Payments' },
   { to: '/reports', label: 'Reports' },
   { to: '/ai', label: 'AI Insights' },

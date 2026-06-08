@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { NavLink } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import { fetchTenants, createTenant } from '../services/api'
 
@@ -162,17 +163,18 @@ export default function Tenants() {
       )}
 
       <div className="tenant-list">
-        {tenants.map((tenant, idx) => (
-          <div key={`${tenant.name}-${idx}`} className="tenant-item tenant-item-link">
+        {tenants.map((tenant) => (
+          <NavLink key={tenant.id} to={`/ach-credit?tenantId=${tenant.id}`} className="tenant-item tenant-item-link">
             <div className="property-item-summary">
               <div>
                 <p className="property-item-line"><strong>{tenant.name}</strong> — {tenant.unit}</p>
+                <p className="ach-tenant-subline">Pay rent via ACH / Credit →</p>
               </div>
               <span className={`status-badge ${tenant.status === 'Paid' ? 'status-paid' : tenant.status === 'Due' ? 'status-due' : 'status-overdue'}`}>
                 {tenant.status}
               </span>
             </div>
-          </div>
+          </NavLink>
         ))}
       </div>
     </MainLayout>

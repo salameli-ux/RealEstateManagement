@@ -83,6 +83,17 @@ CREATE TABLE IF NOT EXISTS payments (
   description TEXT,
   createdAt TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS pm_account (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  companyName TEXT NOT NULL,
+  bankName TEXT,
+  accountType TEXT,
+  routingNumber TEXT,
+  accountNumber TEXT,
+  accountHolder TEXT,
+  address TEXT
+);
 `)
 
 const paymentColumns = db.prepare("PRAGMA table_info(payments)").all().map((row) => row.name)
@@ -125,6 +136,97 @@ if (!tenantColumns.includes('contractUrl')) {
 }
 if (!tenantColumns.includes('mailbox')) {
   db.prepare('ALTER TABLE tenants ADD COLUMN mailbox TEXT').run()
+}
+const tenantBankColumns = [
+  'bankName',
+  'bankAccountType',
+  'bankRoutingNumber',
+  'bankAccountNumber',
+  'bankAccountHolder',
+  'cardBrand',
+  'cardLast4',
+  'cardExpMonth',
+  'cardExpYear',
+]
+for (const column of tenantBankColumns) {
+  if (!tenantColumns.includes(column)) {
+    db.prepare(`ALTER TABLE tenants ADD COLUMN ${column} TEXT`).run()
+  }
+}
+
+const seedTenantBanksByName = {
+  'John Smith': {
+    bankName: 'Wells Fargo',
+    bankAccountType: 'Checking',
+    bankRoutingNumber: '121000248',
+    bankAccountNumber: '7789012345',
+    bankAccountHolder: 'John Smith',
+    cardBrand: 'Mastercard',
+    cardLast4: '5512',
+    cardExpMonth: '11',
+    cardExpYear: '2027',
+  },
+  'Kelly Rivera': {
+    bankName: 'Bank of America',
+    bankAccountType: 'Checking',
+    bankRoutingNumber: '063100277',
+    bankAccountNumber: '4890127890',
+    bankAccountHolder: 'Kelly Rivera',
+    cardBrand: 'Visa',
+    cardLast4: '4242',
+    cardExpMonth: '09',
+    cardExpYear: '2028',
+  },
+  'Marcus Lee': {
+    bankName: 'Citibank',
+    bankAccountType: 'Checking',
+    bankRoutingNumber: '271070801',
+    bankAccountNumber: '3310456789',
+    bankAccountHolder: 'Marcus Lee',
+    cardBrand: 'Amex',
+    cardLast4: '1005',
+    cardExpMonth: '04',
+    cardExpYear: '2029',
+  },
+}
+
+for (const [name, bank] of Object.entries(seedTenantBanksByName)) {
+  db.prepare(`UPDATE tenants SET
+    bankName = ?,
+    bankAccountType = ?,
+    bankRoutingNumber = ?,
+    bankAccountNumber = ?,
+    bankAccountHolder = ?,
+    cardBrand = ?,
+    cardLast4 = ?,
+    cardExpMonth = ?,
+    cardExpYear = ?
+    WHERE name = ? AND (bankName IS NULL OR bankName = '')`).run(
+    bank.bankName,
+    bank.bankAccountType,
+    bank.bankRoutingNumber,
+    bank.bankAccountNumber,
+    bank.bankAccountHolder,
+    bank.cardBrand,
+    bank.cardLast4,
+    bank.cardExpMonth,
+    bank.cardExpYear,
+    name
+  )
+}
+
+const pmAccountExists = db.prepare('SELECT id FROM pm_account WHERE id = 1').get()
+if (!pmAccountExists) {
+  db.prepare(`INSERT INTO pm_account (id, companyName, bankName, accountType, routingNumber, accountNumber, accountHolder, address)
+    VALUES (1, ?, ?, ?, ?, ?, ?, ?)`).run(
+    'RealEstate Pulse Management LLC',
+    'Chase Bank',
+    'Business Checking',
+    '021000021',
+    '8847291056',
+    'RealEstate Pulse Management LLC',
+    '1200 Brickell Ave, Miami, FL 33131'
+  )
 }
 
 const seedTenantTaxIdsByName = {
@@ -453,6 +555,14 @@ if (miamiProperty && miamiTenant) {
     ['INV-MIA-MGMT-MARCO-0124', null, miamiProperty.id, 265, 'USD', 'Management', 'Paid', '2024-01-31', '2024-01-31', 'January PM fee — Marco Alvarez tenancy'],
     ['INV-MIA-MGMT-MARCO-0224', null, miamiProperty.id, 265, 'USD', 'Management', 'Paid', '2024-02-29', '2024-02-29', 'February PM fee — Marco Alvarez tenancy'],
     ['INV-MIA-MGMT-DIANA-0522', null, miamiProperty.id, 240, 'USD', 'Management', 'Paid', '2022-05-31', '2022-05-31', 'May PM fee — Diana Brooks tenancy'],
+    ['INV-MIA-FEE-MONTHLY-03', null, miamiProperty.id, 75, 'USD', 'Monthly', 'Paid', '2025-03-31', '2025-03-31', 'Monthly account administration fee'],
+    ['INV-MIA-FEE-MONTHLY-04', null, miamiProperty.id, 75, 'USD', 'Monthly', 'Paid', '2025-04-30', '2025-04-30', 'Monthly account administration fee'],
+    ['INV-MIA-FEE-MONTHLY-05', null, miamiProperty.id, 75, 'USD', 'Monthly', 'Paid', '2025-05-31', '2025-05-31', 'Monthly account administration fee'],
+    ['INV-MIA-FEE-MONTHLY-06', null, miamiProperty.id, 75, 'USD', 'Monthly', 'Due', '2025-06-30', null, 'Monthly account administration fee'],
+    ['INV-MIA-FEE-CONV-05', null, miamiProperty.id, 25, 'USD', 'Convenience', 'Paid', '2025-05-15', '2025-05-15', 'ACH convenience fee — May rent collection'],
+    ['INV-MIA-FEE-WO-001', null, miamiProperty.id, 95, 'USD', 'Work Order', 'Paid', '2025-05-06', '2025-05-06', 'Work order coordination — HVAC filter service'],
+    ['INV-MIA-FEE-LEASE-25', null, miamiProperty.id, 450, 'USD', 'Leasing', 'Paid', '2025-03-15', '2025-03-15', 'Tenant placement fee — Kelly Rivera lease'],
+    ['INV-MIA-FEE-INSP-25', null, miamiProperty.id, 125, 'USD', 'Inspection', 'Paid', '2025-03-12', '2025-03-12', 'Move-in inspection — Unit 12B'],
     ['INV-MIA-TAX-2024', null, miamiProperty.id, 3180, 'USD', 'Tax', 'Paid', '2025-03-01', '2025-03-05', '2024 Miami-Dade property tax'],
     ['INV-MIA-REP-001', null, miamiProperty.id, 760, 'USD', 'Maintenance', 'Paid', '2025-05-04', '2025-05-06', 'HVAC filter service & coil cleaning'],
     ['INV-MIA-REF-001', miamiTenant.id, miamiProperty.id, 150, 'USD', 'Refund', 'Pending', '2025-06-15', null, 'Pro-rated utility credit'],

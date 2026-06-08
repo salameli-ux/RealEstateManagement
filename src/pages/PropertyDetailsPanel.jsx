@@ -9,8 +9,8 @@ import LedgerRowActions from '../components/LedgerRowActions'
 import LedgerInvoiceModal from '../components/LedgerInvoiceModal'
 import LedgerDocumentsModal from '../components/LedgerDocumentsModal'
 import { formatLeaseDate, formatLeaseDuration } from '../utils/leaseDates'
-import { buildPropertyLedger, formatLedgerDate, formatLedgerSum, getLedgerOperationCode, getLedgerSumDirection, getPaymentLedgerDate } from '../utils/ledgerBalance'
-import { buildManagementFeeSummary } from '../utils/managementFees'
+import { buildPropertyLedger, formatLedgerDate, formatLedgerSum, getLedgerOperationCode, getLedgerSumDirection } from '../utils/ledgerBalance'
+import { buildManagementFeeSummary, formatManagementFeeSum } from '../utils/managementFees'
 
 function staticTenantFallback(property) {
   const info = tenantDetailsMap[property.title]
@@ -211,41 +211,41 @@ export default function PropertyDetailsPanel() {
 
           {ownerActiveTab === 'management' && (
             <div className="tenant-tab-panel owner-mgmt-panel">
-              {managementFees.months.length ? (
+              {managementFees.entries.length ? (
                 <>
-                  <div className="owner-mgmt-summary">
-                    <div>
-                      <span className="owner-mgmt-summary-label">PM revenue from this owner</span>
-                      <span className="owner-mgmt-summary-value">${managementFees.paidRevenue.toLocaleString()} collected</span>
-                    </div>
-                    {managementFees.pendingRevenue > 0 ? (
-                      <span className="owner-mgmt-pending">+ ${managementFees.pendingRevenue.toLocaleString()} pending</span>
-                    ) : null}
+                  <div className="owner-ledger-summary">
+                    <span className="owner-ledger-summary-label">PM revenue from this owner</span>
+                    <span className="owner-ledger-summary-value">
+                      ${managementFees.paidRevenue.toLocaleString()} collected
+                      {managementFees.pendingRevenue > 0 ? ` · $${managementFees.pendingRevenue.toLocaleString()} pending` : ''}
+                    </span>
                   </div>
-                  <ul className="owner-mgmt-month-list">
-                    {managementFees.months.map((month) => (
-                      <li key={month.monthKey} className="owner-mgmt-month-item">
-                        <div className="owner-mgmt-month-header">
-                          <span className="owner-mgmt-month-label">{month.monthLabel}</span>
-                          <span className="owner-mgmt-month-total">${month.total.toLocaleString()}</span>
+                  <div className="owner-ledger-table">
+                    <div className="owner-ledger-header">
+                      <span>Date</span>
+                      <span>Operation</span>
+                      <span>Comment</span>
+                      <span aria-hidden="true" />
+                      <span>Sum</span>
+                      <span>Status</span>
+                    </div>
+                    <div className="owner-ledger-group">
+                      {managementFees.entries.map((payment) => (
+                        <div key={payment.id} className="owner-ledger-row">
+                          <span className="owner-ledger-col owner-ledger-date">{formatLedgerDate(payment.paidDate || payment.dueDate)}</span>
+                          <span className="owner-ledger-col owner-ledger-code">{getLedgerOperationCode(payment)}</span>
+                          <span className="owner-ledger-col owner-ledger-comment">{payment.description || 'Management fee'}</span>
+                          <LedgerRowActions
+                            payment={payment}
+                            onOpenInvoice={setInvoicePayment}
+                            onOpenDocuments={setDocumentsPayment}
+                          />
+                          <span className="owner-ledger-col owner-ledger-sum credit">{formatManagementFeeSum(payment)}</span>
+                          <span className="owner-ledger-col owner-ledger-status">{payment.status}</span>
                         </div>
-                        <ul className="owner-mgmt-fee-list">
-                          {month.fees.map((payment) => (
-                            <li key={payment.id} className="owner-mgmt-fee-item">
-                              <div className="owner-mgmt-fee-main">
-                                <span>${(payment.amount || 0).toLocaleString()}</span>
-                                <span className={`status-badge ${payment.status === 'Paid' ? 'status-paid' : payment.status === 'Due' || payment.status === 'Pending' ? 'status-due' : 'status-overdue'}`}>
-                                  {payment.status}
-                                </span>
-                              </div>
-                              <p className="owner-mgmt-fee-desc">{payment.description || 'Management fee'}</p>
-                              <span className="owner-mgmt-fee-date">{getPaymentLedgerDate(payment) || '—'}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
-                    ))}
-                  </ul>
+                      ))}
+                    </div>
+                  </div>
                 </>
               ) : (
                 <p className="muted-text">No management fees recorded for this property yet.</p>

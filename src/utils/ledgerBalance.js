@@ -1,7 +1,17 @@
 const CREDIT_TYPES = new Set(['Rent'])
-const DEBIT_TYPES = new Set(['HOA', 'Insurance', 'Tax', 'Management', 'Maintenance', 'Refund'])
+
+export const PM_FEE_TYPES = new Set([
+  'Management',
+  'Monthly',
+  'Convenience',
+  'Work Order',
+  'Leasing',
+  'Inspection',
+])
+
+const DEBIT_TYPES = new Set(['HOA', 'Insurance', 'Tax', 'Maintenance', 'Refund', ...PM_FEE_TYPES])
 const SUM_CREDIT_TYPES = new Set(['Rent', 'Deposit'])
-const SUM_DEBIT_TYPES = new Set(['HOA', 'Insurance', 'Tax', 'Management', 'Maintenance', 'Refund'])
+const SUM_DEBIT_TYPES = new Set(['HOA', 'Insurance', 'Tax', 'Maintenance', 'Refund', ...PM_FEE_TYPES])
 
 export function getPaymentLedgerDelta(payment) {
   if (payment.status !== 'Paid') return 0
@@ -21,6 +31,11 @@ const OPERATION_LABELS = {
   Insurance: 'Insurance',
   Tax: 'Property tax',
   Management: 'Management fee',
+  Monthly: 'Monthly fee',
+  Convenience: 'Convenience fee',
+  'Work Order': 'Work order fee',
+  Leasing: 'Leasing fee',
+  Inspection: 'Inspection fee',
   Maintenance: 'Maintenance',
   Refund: 'Refund',
 }

@@ -4,6 +4,8 @@ import authRouter from './routes/auth.js'
 import propertiesRouter from './routes/properties.js'
 import tenantsRouter from './routes/tenants.js'
 import paymentsRouter from './routes/payments.js'
+import pmAccountRouter from './routes/pmAccount.js'
+import rentTransferRouter from './routes/rentTransfer.js'
 import jwt from 'jsonwebtoken'
 
 const app = express()
@@ -40,6 +42,8 @@ app.use('/api/auth', authRouter)
 app.use('/api/properties', authenticateToken, propertiesRouter)
 app.use('/api/tenants', authenticateToken, tenantsRouter)
 app.use('/api/payments', authenticateToken, paymentsRouter)
+app.use('/api/pm-account', authenticateToken, pmAccountRouter)
+app.use('/api/rent-transfer', authenticateToken, rentTransferRouter)
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }))
 
 const port = 4000

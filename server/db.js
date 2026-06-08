@@ -152,4 +152,123 @@ if (paymentCount === 0) {
   stmt.run('INV-1003', 3, 3, 2880, 'USD', 'Rent', 'Overdue', '2025-05-16', null, 'May overdue rent for Chicago Townhome')
 }
 
+const miamiProperty = db.prepare("SELECT id FROM properties WHERE address LIKE '%18 Ocean Drive%' OR title = 'Miami Condo'").get()
+const miamiTenant = db.prepare("SELECT id FROM tenants WHERE name = 'Kelly Rivera'").get()
+
+if (miamiProperty) {
+  db.prepare(`UPDATE properties SET
+    title = ?,
+    address = ?,
+    imageUrl = ?,
+    type = ?,
+    price = ?,
+    purchasePrice = ?,
+    purchaseDate = ?,
+    currentValue = ?,
+    zillowEstimate = ?,
+    yield = ?,
+    status = ?,
+    rent = ?,
+    beds = ?,
+    baths = ?,
+    ownerName = ?,
+    ownerTaxId = ?
+    WHERE id = ?`).run(
+    'Miami Condo',
+    '18 Ocean Drive, Miami, FL',
+    'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=800&q=80',
+    'Condo',
+    445000,
+    385000,
+    '2020-05-10',
+    472000,
+    458000,
+    6.4,
+    'Leased',
+    2850,
+    2,
+    2,
+    'Sunrise Holdings LLC',
+    '87-6543210',
+    miamiProperty.id
+  )
+}
+
+if (miamiTenant) {
+  db.prepare(`UPDATE tenants SET
+    unit = ?,
+    email = ?,
+    phone = ?,
+    taxId = ?,
+    leaseStart = ?,
+    leaseEnd = ?,
+    rent = ?,
+    status = ?,
+    nextDue = ?,
+    contract = ?,
+    cycle = ?,
+    documents = ?,
+    activity = ?
+    WHERE id = ?`).run(
+    'Unit 12B — 18 Ocean Drive',
+    'kelly.rivera@example.com',
+    '(305) 555-0231',
+    '789-01-2345',
+    'Mar 15, 2025',
+    'Mar 14, 2026',
+    '$2,850',
+    'Due',
+    'Jun 1, 2025',
+    '12 month lease',
+    'Monthly',
+    JSON.stringify([
+      'Signed lease agreement',
+      'Government-issued ID copy',
+      'Security deposit receipt ($5,700)',
+      'Pet addendum — Coco (12 lb dog)',
+      'Renter insurance certificate',
+      'Move-in inspection checklist',
+      'Parking permit — P2 slot 48',
+      'ACH autopay authorization form',
+    ]),
+    JSON.stringify([
+      'Jun 1, 2025 — June rent invoice generated',
+      'May 29, 2025 — Payment reminder email sent',
+      'May 15, 2025 — May rent received ($2,850)',
+      'May 3, 2025 — Maintenance: AC filter replaced',
+      'Apr 20, 2025 — HOA notice forwarded to tenant',
+      'Apr 10, 2025 — Lease countersigned by all parties',
+      'Apr 2, 2025 — Background & credit check cleared',
+      'Mar 18, 2025 — Welcome packet delivered',
+      'Mar 15, 2025 — Move-in day completed',
+    ]),
+    miamiTenant.id
+  )
+}
+
+if (miamiProperty && miamiTenant) {
+  const insertPayment = db.prepare(`INSERT INTO payments (invoiceNumber, tenantId, propertyId, amount, currency, type, status, dueDate, paidDate, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+  const paymentExists = db.prepare('SELECT id FROM payments WHERE invoiceNumber = ?')
+
+  const miamiDemoPayments = [
+    ['INV-MIA-2025-06', miamiTenant.id, miamiProperty.id, 2850, 'USD', 'Rent', 'Due', '2025-06-01', null, 'June rent — Unit 12B'],
+    ['INV-MIA-2025-05', miamiTenant.id, miamiProperty.id, 2850, 'USD', 'Rent', 'Paid', '2025-05-01', '2025-05-15', 'May rent — Unit 12B'],
+    ['INV-MIA-2025-04', miamiTenant.id, miamiProperty.id, 2850, 'USD', 'Rent', 'Paid', '2025-04-01', '2025-04-03', 'April rent — Unit 12B'],
+    ['INV-MIA-2025-03', miamiTenant.id, miamiProperty.id, 2850, 'USD', 'Rent', 'Paid', '2025-03-01', '2025-03-02', 'March rent — Unit 12B'],
+    ['INV-MIA-DEP-001', miamiTenant.id, miamiProperty.id, 5700, 'USD', 'Deposit', 'Paid', '2025-03-10', '2025-03-10', 'Security deposit — 2 months'],
+    ['INV-MIA-HOA-2025', null, miamiProperty.id, 485, 'USD', 'HOA', 'Paid', '2025-04-15', '2025-04-16', 'Quarterly HOA assessment Q2'],
+    ['INV-MIA-INS-2025', null, miamiProperty.id, 1340, 'USD', 'Insurance', 'Paid', '2025-01-10', '2025-01-12', 'Windstorm & liability insurance 2025'],
+    ['INV-MIA-MGMT-05', null, miamiProperty.id, 285, 'USD', 'Management', 'Paid', '2025-05-31', '2025-05-31', 'May property management fee (10%)'],
+    ['INV-MIA-TAX-2024', null, miamiProperty.id, 3180, 'USD', 'Tax', 'Paid', '2025-03-01', '2025-03-05', '2024 Miami-Dade property tax'],
+    ['INV-MIA-REP-001', null, miamiProperty.id, 760, 'USD', 'Maintenance', 'Paid', '2025-05-04', '2025-05-06', 'HVAC filter service & coil cleaning'],
+    ['INV-MIA-REF-001', miamiTenant.id, miamiProperty.id, 150, 'USD', 'Refund', 'Pending', '2025-06-15', null, 'Pro-rated utility credit'],
+  ]
+
+  for (const payment of miamiDemoPayments) {
+    if (!paymentExists.get(payment[0])) {
+      insertPayment.run(...payment)
+    }
+  }
+}
+
 export default db

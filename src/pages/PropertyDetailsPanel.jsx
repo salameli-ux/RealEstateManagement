@@ -5,8 +5,11 @@ import { tenantDetailsMap } from '../data/tenantDetails'
 import { ownerDetailsMap } from '../data/ownerDetails'
 import MailboxPanel from '../components/MailboxPanel'
 import TenantDetailsBlock from '../components/TenantDetailsBlock'
+import LedgerRowActions from '../components/LedgerRowActions'
+import LedgerInvoiceModal from '../components/LedgerInvoiceModal'
+import LedgerDocumentsModal from '../components/LedgerDocumentsModal'
 import { formatLeaseDate, formatLeaseDuration } from '../utils/leaseDates'
-import { buildPropertyLedger, getPaymentLedgerDate } from '../utils/ledgerBalance'
+import { buildPropertyLedger, formatLedgerDate, formatLedgerSum, getLedgerOperationCode, getLedgerSumDirection, getPaymentLedgerDate } from '../utils/ledgerBalance'
 import { buildManagementFeeSummary } from '../utils/managementFees'
 
 function staticTenantFallback(property) {
@@ -24,10 +27,14 @@ export default function PropertyDetailsPanel() {
   const [error, setError] = useState('')
   const [ownerActiveTab, setOwnerActiveTab] = useState('personal')
   const [expandedPastTenantId, setExpandedPastTenantId] = useState(null)
+  const [invoicePayment, setInvoicePayment] = useState(null)
+  const [documentsPayment, setDocumentsPayment] = useState(null)
 
   useEffect(() => {
     setOwnerActiveTab('personal')
     setExpandedPastTenantId(null)
+    setInvoicePayment(null)
+    setDocumentsPayment(null)
     setLoading(true)
     setError('')
     Promise.all([
@@ -254,42 +261,42 @@ export default function PropertyDetailsPanel() {
                     <span className="owner-ledger-summary-label">Current balance</span>
                     <span className="owner-ledger-summary-value">${ledger.currentBalance.toLocaleString()}</span>
                   </div>
-                  <ul className="owner-ledger-list">
-                    {ledger.entries.map(({ payment, delta, balance }) => (
-                      <li key={payment.id} className="owner-ledger-item">
-                        <div className="owner-ledger-main">
-                          <span className="owner-ledger-type">{payment.type}</span>
-                          <div className="owner-ledger-amounts">
-                            <span className={`owner-ledger-amount${delta > 0 ? ' credit' : delta < 0 ? ' debit' : ''}`}>
-                              {delta > 0 ? '+' : ''}{delta !== 0 ? `$${Math.abs(delta).toLocaleString()}` : `$${(payment.amount || 0).toLocaleString()}`}
-                            </span>
-                            <span className="owner-ledger-balance">${balance.toLocaleString()}</span>
-                          </div>
+                  <div className="owner-ledger-table">
+                    <div className="owner-ledger-header">
+                      <span>Date</span>
+                      <span>Operation</span>
+                      <span>Comment</span>
+                      <span aria-hidden="true" />
+                      <span>Sum</span>
+                      <span>Balance</span>
+                    </div>
+                    <div className="owner-ledger-group">
+                      {ledger.entries.map(({ payment, delta, balance }) => (
+                        <div key={payment.id} className="owner-ledger-row">
+                          <span className="owner-ledger-col owner-ledger-date">{formatLedgerDate(payment.paidDate || payment.dueDate)}</span>
+                          <span className="owner-ledger-col owner-ledger-code">{getLedgerOperationCode(payment)}</span>
+                          <span className="owner-ledger-col owner-ledger-comment">{payment.description || '—'}</span>
+                          <LedgerRowActions
+                            payment={payment}
+                            onOpenInvoice={setInvoicePayment}
+                            onOpenDocuments={setDocumentsPayment}
+                          />
+                          <span className={`owner-ledger-col owner-ledger-sum ${getLedgerSumDirection(payment)}`}>{formatLedgerSum(payment)}</span>
+                          <span className="owner-ledger-col owner-ledger-balance">${balance.toLocaleString()}</span>
                         </div>
-                        <div className="owner-ledger-meta">
-                          <span className={`status-badge ${payment.status === 'Paid' ? 'status-paid' : payment.status === 'Due' || payment.status === 'Pending' ? 'status-due' : 'status-overdue'}`}>
-                            {payment.status}
-                          </span>
-                          <span>{getPaymentLedgerDate(payment) || '—'}</span>
-                          {payment.description ? <span>{payment.description}</span> : null}
+                      ))}
+                      {ledger.openingBalance > 0 ? (
+                        <div className="owner-ledger-row owner-ledger-opening">
+                          <span className="owner-ledger-col owner-ledger-date">—</span>
+                          <span className="owner-ledger-col owner-ledger-code">Owner reserve deposit</span>
+                          <span className="owner-ledger-col owner-ledger-comment">Initial owner fund</span>
+                          <span className="owner-ledger-actions owner-ledger-actions-empty" aria-hidden="true" />
+                          <span className="owner-ledger-col owner-ledger-sum credit">+${ledger.openingBalance.toLocaleString()}</span>
+                          <span className="owner-ledger-col owner-ledger-balance">${ledger.openingBalance.toLocaleString()}</span>
                         </div>
-                      </li>
-                    ))}
-                    {ledger.openingBalance > 0 ? (
-                      <li className="owner-ledger-item owner-ledger-opening">
-                        <div className="owner-ledger-main">
-                          <span className="owner-ledger-type">Opening balance</span>
-                          <div className="owner-ledger-amounts">
-                            <span className="owner-ledger-amount credit">+${ledger.openingBalance.toLocaleString()}</span>
-                            <span className="owner-ledger-balance">${ledger.openingBalance.toLocaleString()}</span>
-                          </div>
-                        </div>
-                        <div className="owner-ledger-meta">
-                          <span>Owner reserve deposit</span>
-                        </div>
-                      </li>
-                    ) : null}
-                  </ul>
+                      ) : null}
+                    </div>
+                  </div>
                 </>
               ) : (
                 <p className="muted-text">No transactions recorded for this property yet.</p>
@@ -353,6 +360,9 @@ export default function PropertyDetailsPanel() {
           </ul>
         </div>
       )}
+
+      <LedgerInvoiceModal payment={invoicePayment} property={property} onClose={() => setInvoicePayment(null)} />
+      <LedgerDocumentsModal payment={documentsPayment} onClose={() => setDocumentsPayment(null)} />
     </div>
   )
 }

@@ -1,5 +1,7 @@
 const CREDIT_TYPES = new Set(['Rent'])
 const DEBIT_TYPES = new Set(['HOA', 'Insurance', 'Tax', 'Management', 'Maintenance', 'Refund'])
+const SUM_CREDIT_TYPES = new Set(['Rent', 'Deposit'])
+const SUM_DEBIT_TYPES = new Set(['HOA', 'Insurance', 'Tax', 'Management', 'Maintenance', 'Refund'])
 
 export function getPaymentLedgerDelta(payment) {
   if (payment.status !== 'Paid') return 0
@@ -10,6 +12,41 @@ export function getPaymentLedgerDelta(payment) {
 
 export function getPaymentLedgerDate(payment) {
   return payment.paidDate || payment.dueDate || ''
+}
+
+const OPERATION_LABELS = {
+  Rent: 'Rent collection',
+  Deposit: 'Tenant deposit',
+  HOA: 'HOA assessment',
+  Insurance: 'Insurance',
+  Tax: 'Property tax',
+  Management: 'Management fee',
+  Maintenance: 'Maintenance',
+  Refund: 'Refund',
+}
+
+export function getLedgerOperationCode(payment) {
+  return OPERATION_LABELS[payment.type] || payment.type || 'Transaction'
+}
+
+export function formatLedgerDate(value) {
+  if (!value) return '—'
+  const parsed = new Date(value.includes('-') && !value.includes(',') ? `${value}T12:00:00` : value)
+  if (Number.isNaN(parsed.getTime())) return value
+  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+export function getLedgerSumDirection(payment) {
+  if (SUM_CREDIT_TYPES.has(payment.type)) return 'credit'
+  if (SUM_DEBIT_TYPES.has(payment.type)) return 'debit'
+  return 'debit'
+}
+
+export function formatLedgerSum(payment) {
+  const amount = payment.amount || 0
+  return getLedgerSumDirection(payment) === 'credit'
+    ? `+$${amount.toLocaleString()}`
+    : `-$${amount.toLocaleString()}`
 }
 
 function parseLedgerDate(value) {

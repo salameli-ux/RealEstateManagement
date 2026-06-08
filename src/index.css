@@ -1260,69 +1260,267 @@ tbody td {
   color: #f8fafc;
 }
 
-.properties-detail-pane .owner-ledger-list {
+.properties-detail-pane .owner-ledger-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.properties-detail-pane .owner-ledger-header,
+.properties-detail-pane .owner-ledger-row {
+  display: grid;
+  grid-template-columns: 108px minmax(96px, 0.85fr) minmax(120px, 1.1fr) 56px 92px 96px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.properties-detail-pane .owner-ledger-header {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.properties-detail-pane .owner-ledger-header span:nth-child(5),
+.properties-detail-pane .owner-ledger-header span:nth-child(6),
+.properties-detail-pane .owner-ledger-sum,
+.properties-detail-pane .owner-ledger-balance {
+  text-align: right;
+}
+
+.properties-detail-pane .owner-ledger-group {
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.properties-detail-pane .owner-ledger-row {
+  position: relative;
+  background: #1e293b;
+  transition: background 0.15s ease;
+}
+
+.properties-detail-pane .owner-ledger-row:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 1px;
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.properties-detail-pane .owner-ledger-row:hover {
+  background: #334155;
+}
+
+.properties-detail-pane .owner-ledger-col {
+  font-size: 0.88rem;
+  color: #e2e8f0;
+  min-width: 0;
+}
+
+.properties-detail-pane .owner-ledger-date {
+  color: #cbd5e1;
+  white-space: nowrap;
+}
+
+.properties-detail-pane .owner-ledger-code {
+  font-weight: 500;
+  color: #f8fafc;
+}
+
+.properties-detail-pane .owner-ledger-comment {
+  color: #94a3b8;
+  font-size: 0.84rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.properties-detail-pane .owner-ledger-sum {
+  font-weight: 600;
+  color: #cbd5e1;
+  font-variant-numeric: tabular-nums;
+}
+
+.properties-detail-pane .owner-ledger-sum.credit {
+  color: #4ade80;
+}
+
+.properties-detail-pane .owner-ledger-sum.debit {
+  color: #f87171;
+}
+
+.properties-detail-pane .owner-ledger-balance {
+  font-weight: 700;
+  color: #f8fafc;
+  font-variant-numeric: tabular-nums;
+}
+
+.properties-detail-pane .owner-ledger-opening .owner-ledger-code {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.properties-detail-pane .owner-ledger-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.properties-detail-pane .owner-ledger-actions-empty {
+  min-height: 28px;
+}
+
+.properties-detail-pane .ledger-action-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.55);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.properties-detail-pane .ledger-action-btn:hover {
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: rgba(96, 165, 250, 0.45);
+}
+
+.ledger-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.ledger-modal {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 20px 22px 22px;
+  border-radius: 14px;
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  color: #e2e8f0;
+  box-shadow: 0 24px 48px rgba(2, 6, 23, 0.45);
+}
+
+.ledger-modal-compact {
+  width: min(420px, 100%);
+}
+
+.ledger-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ledger-modal-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.ledger-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #f8fafc;
+}
+
+.ledger-modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.65);
+  color: #cbd5e1;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ledger-modal-close:hover {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.ledger-invoice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.ledger-invoice-wide {
+  grid-column: 1 / -1;
+}
+
+.ledger-invoice-grid .meta-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.ledger-invoice-grid p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #f8fafc;
+}
+
+.ledger-modal-action {
+  display: inline-flex;
+  margin-top: 18px;
+}
+
+.ledger-documents-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.properties-detail-pane .owner-ledger-item {
-  padding: 12px;
-  border-radius: 12px;
-  background: #334155;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-}
-
-.properties-detail-pane .owner-ledger-main {
+.ledger-documents-list a {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 6px;
-}
-
-.properties-detail-pane .owner-ledger-type {
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #334155;
+  border: 1px solid rgba(148, 163, 184, 0.18);
   color: #f8fafc;
+  text-decoration: none;
+  transition: background 0.15s ease;
 }
 
-.properties-detail-pane .owner-ledger-amounts {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.ledger-documents-list a:hover {
+  background: #475569;
 }
 
-.properties-detail-pane .owner-ledger-amount {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #94a3b8;
-  min-width: 72px;
-  text-align: right;
-}
-
-.properties-detail-pane .owner-ledger-amount.credit {
-  color: #4ade80;
-}
-
-.properties-detail-pane .owner-ledger-amount.debit {
-  color: #f87171;
-}
-
-.properties-detail-pane .owner-ledger-balance {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #f8fafc;
-  min-width: 88px;
-  text-align: right;
-}
-
-.properties-detail-pane .owner-ledger-opening {
-  border-style: dashed;
-  opacity: 0.92;
+.ledger-documents-open {
+  font-size: 0.78rem;
+  color: #60a5fa;
 }
 
 .properties-detail-pane .owner-mgmt-summary {

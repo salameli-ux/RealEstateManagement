@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS properties (
   beds INTEGER,
   baths INTEGER,
   ownerName TEXT,
-  ownerTaxId TEXT
+  ownerTaxId TEXT,
+  openingBalance INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS tenants (
@@ -95,6 +96,18 @@ if (!propertyColumns.includes('ownerName')) {
 }
 if (!propertyColumns.includes('ownerTaxId')) {
   db.prepare('ALTER TABLE properties ADD COLUMN ownerTaxId TEXT').run()
+}
+if (!propertyColumns.includes('openingBalance')) {
+  db.prepare('ALTER TABLE properties ADD COLUMN openingBalance INTEGER NOT NULL DEFAULT 0').run()
+}
+
+const seedOpeningBalanceByTitle = {
+  'Atlanta Duplex': 12000,
+  'Miami Condo': 25000,
+  'Chicago Townhome': 15000,
+}
+for (const [title, balance] of Object.entries(seedOpeningBalanceByTitle)) {
+  db.prepare('UPDATE properties SET openingBalance = ? WHERE title = ? AND (openingBalance IS NULL OR openingBalance = 0)').run(balance, title)
 }
 
 const tenantColumns = db.prepare('PRAGMA table_info(tenants)').all().map((row) => row.name)
@@ -188,7 +201,8 @@ if (miamiProperty) {
     beds = ?,
     baths = ?,
     ownerName = ?,
-    ownerTaxId = ?
+    ownerTaxId = ?,
+    openingBalance = ?
     WHERE id = ?`).run(
     'Miami Condo',
     '18 Ocean Drive, Miami, FL',
@@ -206,6 +220,7 @@ if (miamiProperty) {
     2,
     'Sunrise Holdings LLC',
     '87-6543210',
+    25000,
     miamiProperty.id
   )
 }
@@ -431,7 +446,13 @@ if (miamiProperty && miamiTenant) {
     ['INV-MIA-DEP-001', miamiTenant.id, miamiProperty.id, 5700, 'USD', 'Deposit', 'Paid', '2025-03-10', '2025-03-10', 'Security deposit — 2 months'],
     ['INV-MIA-HOA-2025', null, miamiProperty.id, 485, 'USD', 'HOA', 'Paid', '2025-04-15', '2025-04-16', 'Quarterly HOA assessment Q2'],
     ['INV-MIA-INS-2025', null, miamiProperty.id, 1340, 'USD', 'Insurance', 'Paid', '2025-01-10', '2025-01-12', 'Windstorm & liability insurance 2025'],
+    ['INV-MIA-MGMT-03', null, miamiProperty.id, 285, 'USD', 'Management', 'Paid', '2025-03-31', '2025-03-31', 'March property management fee (10%)'],
+    ['INV-MIA-MGMT-04', null, miamiProperty.id, 285, 'USD', 'Management', 'Paid', '2025-04-30', '2025-04-30', 'April property management fee (10%)'],
     ['INV-MIA-MGMT-05', null, miamiProperty.id, 285, 'USD', 'Management', 'Paid', '2025-05-31', '2025-05-31', 'May property management fee (10%)'],
+    ['INV-MIA-MGMT-06', null, miamiProperty.id, 285, 'USD', 'Management', 'Due', '2025-06-30', null, 'June property management fee (10%)'],
+    ['INV-MIA-MGMT-MARCO-0124', null, miamiProperty.id, 265, 'USD', 'Management', 'Paid', '2024-01-31', '2024-01-31', 'January PM fee — Marco Alvarez tenancy'],
+    ['INV-MIA-MGMT-MARCO-0224', null, miamiProperty.id, 265, 'USD', 'Management', 'Paid', '2024-02-29', '2024-02-29', 'February PM fee — Marco Alvarez tenancy'],
+    ['INV-MIA-MGMT-DIANA-0522', null, miamiProperty.id, 240, 'USD', 'Management', 'Paid', '2022-05-31', '2022-05-31', 'May PM fee — Diana Brooks tenancy'],
     ['INV-MIA-TAX-2024', null, miamiProperty.id, 3180, 'USD', 'Tax', 'Paid', '2025-03-01', '2025-03-05', '2024 Miami-Dade property tax'],
     ['INV-MIA-REP-001', null, miamiProperty.id, 760, 'USD', 'Maintenance', 'Paid', '2025-05-04', '2025-05-06', 'HVAC filter service & coil cleaning'],
     ['INV-MIA-REF-001', miamiTenant.id, miamiProperty.id, 150, 'USD', 'Refund', 'Pending', '2025-06-15', null, 'Pro-rated utility credit'],

@@ -1237,6 +1237,29 @@ tbody td {
   margin-top: 4px;
 }
 
+.properties-detail-pane .owner-ledger-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #0f172a;
+  border: 1px solid rgba(96, 165, 250, 0.35);
+}
+
+.properties-detail-pane .owner-ledger-summary-label {
+  font-size: 0.88rem;
+  color: #94a3b8;
+}
+
+.properties-detail-pane .owner-ledger-summary-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
 .properties-detail-pane .owner-ledger-list {
   list-style: none;
   margin: 0;
@@ -1267,10 +1290,148 @@ tbody td {
   color: #f8fafc;
 }
 
+.properties-detail-pane .owner-ledger-amounts {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .properties-detail-pane .owner-ledger-amount {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #94a3b8;
+  min-width: 72px;
+  text-align: right;
+}
+
+.properties-detail-pane .owner-ledger-amount.credit {
+  color: #4ade80;
+}
+
+.properties-detail-pane .owner-ledger-amount.debit {
+  color: #f87171;
+}
+
+.properties-detail-pane .owner-ledger-balance {
   font-size: 0.9rem;
   font-weight: 700;
+  color: #f8fafc;
+  min-width: 88px;
+  text-align: right;
+}
+
+.properties-detail-pane .owner-ledger-opening {
+  border-style: dashed;
+  opacity: 0.92;
+}
+
+.properties-detail-pane .owner-mgmt-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #0f172a;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.properties-detail-pane .owner-mgmt-summary-label {
+  display: block;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.properties-detail-pane .owner-mgmt-summary-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.properties-detail-pane .owner-mgmt-pending {
+  font-size: 0.84rem;
+  color: #fbbf24;
+}
+
+.properties-detail-pane .owner-mgmt-month-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.properties-detail-pane .owner-mgmt-month-item {
+  border-radius: 12px;
+  background: #334155;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  overflow: hidden;
+}
+
+.properties-detail-pane .owner-mgmt-month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.45);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.properties-detail-pane .owner-mgmt-month-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.properties-detail-pane .owner-mgmt-month-total {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.properties-detail-pane .owner-mgmt-fee-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.properties-detail-pane .owner-mgmt-fee-item {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.properties-detail-pane .owner-mgmt-fee-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.properties-detail-pane .owner-mgmt-fee-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
   color: #e2e8f0;
+}
+
+.properties-detail-pane .owner-mgmt-fee-desc {
+  margin: 4px 0 2px;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+.properties-detail-pane .owner-mgmt-fee-date {
+  font-size: 0.78rem;
+  color: #94a3b8;
 }
 
 .properties-detail-pane .owner-ledger-meta {
@@ -1987,7 +2148,7 @@ tbody td {
 .contact-status-dot {
   width: 16px;
   height: 16px;
-  border-radius: 50%;
+  border-radius: 3px;
   flex-shrink: 0;
 }
 

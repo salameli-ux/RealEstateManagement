@@ -1076,7 +1076,9 @@ tbody td {
 }
 
 .properties-detail-pane .property-card {
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding: 16px 18px;
   border-radius: 14px;
   background: #1e293b;
@@ -1084,9 +1086,35 @@ tbody td {
   color: #e2e8f0;
 }
 
+.properties-detail-pane .owner-card-header {
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.properties-detail-pane .owner-card-header h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: #f8fafc;
+}
+
+.properties-detail-pane .property-card .owner-name {
+  width: 100%;
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #f8fafc;
+}
+
+.properties-detail-pane .property-card-body {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
 .properties-detail-pane .property-media {
-  flex: 0 0 130px;
-  max-width: 130px;
+  flex: 0 0 160px;
+  max-width: 160px;
   min-height: 100px;
   border-radius: 10px;
 }
@@ -1126,23 +1154,190 @@ tbody td {
   color: #94a3b8;
 }
 
-.properties-detail-pane .tenant-tabs {
-  margin: 8px 0 12px;
-  gap: 8px;
-}
-
-.properties-detail-pane .tab-btn {
-  padding: 6px 12px;
-  font-size: 0.84rem;
-  color: #cbd5e1;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: #334155;
-}
-
-.properties-detail-pane .tab-btn.active {
-  background: #475569;
-  border-color: rgba(148, 163, 184, 0.35);
+.properties-detail-pane .tenant-card-header .tenant-name {
+  margin-top: 2px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.25;
   color: #f8fafc;
+}
+
+.properties-detail-pane .tenant-tabs {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0;
+  margin: 8px 0 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.properties-detail-pane .tenant-tab {
+  width: auto;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.properties-detail-pane .tenant-tab:hover {
+  color: #e2e8f0;
+}
+
+.properties-detail-pane .tenant-tab.active {
+  color: #f8fafc;
+  background: transparent;
+  border-bottom-color: #60a5fa;
+}
+
+.properties-detail-pane .tenant-tab-panel {
+  padding-top: 14px;
+}
+
+.properties-detail-pane .tenant-tab-panel.tenant-activity {
+  margin-top: 0;
+}
+
+.properties-detail-pane .tenant-tab-panel.tenant-activity ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #cbd5e1;
+}
+
+.properties-detail-pane .tenant-tab-panel.tenant-activity li {
+  margin-bottom: 8px;
+  font-size: 0.84rem;
+}
+
+.properties-detail-pane .tenant-personal-grid {
+  margin-top: 0;
+}
+
+.properties-detail-pane .tenant-documents-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #cbd5e1;
+}
+
+.properties-detail-pane .tenant-documents-list li {
+  margin-bottom: 6px;
+  font-size: 0.84rem;
+}
+
+.properties-detail-pane .owner-details-panel .tenant-tabs {
+  margin-top: 4px;
+}
+
+.properties-detail-pane .owner-ledger-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.properties-detail-pane .owner-ledger-item {
+  padding: 12px;
+  border-radius: 12px;
+  background: #334155;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.properties-detail-pane .owner-ledger-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.properties-detail-pane .owner-ledger-type {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.properties-detail-pane .owner-ledger-amount {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.properties-detail-pane .owner-ledger-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.properties-detail-pane .mailbox-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.properties-detail-pane .mailbox-item {
+  padding: 12px;
+  border-radius: 12px;
+  background: #334155;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.properties-detail-pane .mailbox-item.unread {
+  border-color: rgba(96, 165, 250, 0.45);
+  background: #3b4a63;
+}
+
+.properties-detail-pane .mailbox-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.properties-detail-pane .mailbox-subject {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.properties-detail-pane .mailbox-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #60a5fa;
+  flex-shrink: 0;
+}
+
+.properties-detail-pane .mailbox-preview {
+  margin: 0 0 8px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: #cbd5e1;
+}
+
+.properties-detail-pane .mailbox-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: #94a3b8;
 }
 
 .properties-detail-pane .tenant-contact-grid {
@@ -1684,8 +1879,8 @@ tbody td {
 }
 
 .properties-list-pane .contact-row.active {
-  background: #334155;
-  box-shadow: inset 4px 0 0 #94a3b8;
+  background: #cbd5e1;
+  box-shadow: inset 5px 0 0 #2563eb;
 }
 
 .contact-row:hover:not(.active) {
@@ -2173,12 +2368,12 @@ tbody td {
 }
 
 .properties-list-pane .contact-row.active {
-  background: #334155;
-  box-shadow: inset 4px 0 0 #94a3b8;
+  background: #cbd5e1;
+  box-shadow: inset 5px 0 0 #2563eb;
 }
 
 .properties-list-pane .contact-row.active .contact-row-title {
-  color: #f8fafc;
+  color: #0f172a;
   font-weight: 700;
 }
 

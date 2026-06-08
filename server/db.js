@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   unit TEXT,
   email TEXT,
   phone TEXT,
+  taxId TEXT,
   leaseStart TEXT,
   leaseEnd TEXT,
   rent TEXT,
@@ -92,6 +93,23 @@ if (!propertyColumns.includes('ownerTaxId')) {
   db.prepare('ALTER TABLE properties ADD COLUMN ownerTaxId TEXT').run()
 }
 
+const tenantColumns = db.prepare('PRAGMA table_info(tenants)').all().map((row) => row.name)
+if (!tenantColumns.includes('taxId')) {
+  db.prepare('ALTER TABLE tenants ADD COLUMN taxId TEXT').run()
+}
+
+const seedTenantTaxIdsByName = {
+  'John Smith': '456-78-9012',
+  'Kelly Rivera': '789-01-2345',
+  'Marcus Lee': '321-54-6789',
+}
+
+const tenantsMissingTaxId = db.prepare("SELECT id, name FROM tenants WHERE taxId IS NULL OR taxId = ''").all()
+for (const tenant of tenantsMissingTaxId) {
+  const taxId = seedTenantTaxIdsByName[tenant.name] || '000-00-0000'
+  db.prepare('UPDATE tenants SET taxId = ? WHERE id = ?').run(taxId, tenant.id)
+}
+
 const seedOwnersByTitle = {
   'Atlanta Duplex': { ownerName: 'Robert Chen', ownerTaxId: '123-45-6789' },
   'Miami Condo': { ownerName: 'Sunrise Holdings LLC', ownerTaxId: '87-6543210' },
@@ -120,10 +138,10 @@ if (userCount === 0) {
 
 const tenantCount = db.prepare('SELECT COUNT(*) as count FROM tenants').get().count
 if (tenantCount === 0) {
-  const stmt = db.prepare(`INSERT INTO tenants (name, unit, email, phone, leaseStart, leaseEnd, rent, status, nextDue, contract, cycle, documents, activity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-  stmt.run('John Smith', 'Atlanta Duplex', 'john.smith@example.com', '(404) 555-0178', 'Jan 5, 2025', 'Jan 4, 2026', '$3,250', 'Paid', 'Jun 1', '12 month lease', 'Monthly', JSON.stringify(['Lease agreement', 'ID copy', 'Move-in checklist']), JSON.stringify(['May 1 - Rent received', 'Apr 27 - Maintenance request completed', 'Apr 15 - Lease reminder sent']))
-  stmt.run('Kelly Rivera', 'Miami Condo', 'kelly.rivera@example.com', '(305) 555-0231', 'Mar 15, 2025', 'Mar 14, 2026', '$2,100', 'Due', 'May 29', '12 month lease', 'Monthly', JSON.stringify(['Lease agreement', 'Security deposit receipt', 'Pet addendum']), JSON.stringify(['Apr 20 - Payment reminder sent', 'Apr 10 - Lease signed', 'Mar 18 - Welcome email sent']))
-  stmt.run('Marcus Lee', 'Chicago Townhome', 'marcus.lee@example.com', '(312) 555-0450', 'Feb 1, 2025', 'Jan 31, 2026', '$2,880', 'Overdue', 'May 16', '11 month lease', 'Monthly', JSON.stringify(['Lease agreement', 'Insurance proof', 'Payment authorization']), JSON.stringify(['May 16 - Payment overdue', 'May 5 - Maintenance follow-up', 'Apr 22 - Rent partial payment']))
+  const stmt = db.prepare(`INSERT INTO tenants (name, unit, email, phone, taxId, leaseStart, leaseEnd, rent, status, nextDue, contract, cycle, documents, activity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+  stmt.run('John Smith', 'Atlanta Duplex', 'john.smith@example.com', '(404) 555-0178', '456-78-9012', 'Jan 5, 2025', 'Jan 4, 2026', '$3,250', 'Paid', 'Jun 1', '12 month lease', 'Monthly', JSON.stringify(['Lease agreement', 'ID copy', 'Move-in checklist']), JSON.stringify(['May 1 - Rent received', 'Apr 27 - Maintenance request completed', 'Apr 15 - Lease reminder sent']))
+  stmt.run('Kelly Rivera', 'Miami Condo', 'kelly.rivera@example.com', '(305) 555-0231', '789-01-2345', 'Mar 15, 2025', 'Mar 14, 2026', '$2,100', 'Due', 'May 29', '12 month lease', 'Monthly', JSON.stringify(['Lease agreement', 'Security deposit receipt', 'Pet addendum']), JSON.stringify(['Apr 20 - Payment reminder sent', 'Apr 10 - Lease signed', 'Mar 18 - Welcome email sent']))
+  stmt.run('Marcus Lee', 'Chicago Townhome', 'marcus.lee@example.com', '(312) 555-0450', '321-54-6789', 'Feb 1, 2025', 'Jan 31, 2026', '$2,880', 'Overdue', 'May 16', '11 month lease', 'Monthly', JSON.stringify(['Lease agreement', 'Insurance proof', 'Payment authorization']), JSON.stringify(['May 16 - Payment overdue', 'May 5 - Maintenance follow-up', 'Apr 22 - Rent partial payment']))
 }
 
 const paymentCount = db.prepare('SELECT COUNT(*) as count FROM payments').get().count

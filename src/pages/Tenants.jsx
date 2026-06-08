@@ -8,6 +8,7 @@ const initialTenants = [
     unit: 'Atlanta Duplex',
     email: 'john.smith@example.com',
     phone: '(404) 555-0178',
+    taxId: '456-78-9012',
     leaseStart: 'Jan 5, 2025',
     leaseEnd: 'Jan 4, 2026',
     rent: '$3,250',
@@ -23,6 +24,7 @@ const initialTenants = [
     unit: 'Miami Condo',
     email: 'kelly.rivera@example.com',
     phone: '(305) 555-0231',
+    taxId: '789-01-2345',
     leaseStart: 'Mar 15, 2025',
     leaseEnd: 'Mar 14, 2026',
     rent: '$2,100',
@@ -38,6 +40,7 @@ const initialTenants = [
     unit: 'Chicago Townhome',
     email: 'marcus.lee@example.com',
     phone: '(312) 555-0450',
+    taxId: '321-54-6789',
     leaseStart: 'Feb 1, 2025',
     leaseEnd: 'Jan 31, 2026',
     rent: '$2,880',
@@ -58,6 +61,7 @@ export default function Tenants() {
     unit: '',
     email: '',
     phone: '',
+    taxId: '',
     leaseStart: '',
     leaseEnd: '',
     rent: '',
@@ -94,7 +98,7 @@ export default function Tenants() {
       const created = await createTenant(payload)
       setTenants((t) => [created, ...t])
       setForm({
-        name: '', unit: '', email: '', phone: '', leaseStart: '', leaseEnd: '', rent: '', status: 'Due', nextDue: '', contract: '12 month lease', cycle: 'Monthly'
+        name: '', unit: '', email: '', phone: '', taxId: '', leaseStart: '', leaseEnd: '', rent: '', status: 'Due', nextDue: '', contract: '12 month lease', cycle: 'Monthly'
       })
       setShowForm(false)
     } catch (error) {
@@ -132,6 +136,10 @@ export default function Tenants() {
             <div className="form-group">
               <label>Phone</label>
               <input name="phone" value={form.phone} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label>SSN / ITIN / EIN</label>
+              <input name="taxId" value={form.taxId} onChange={handleChange} placeholder="123-45-6789" />
             </div>
             <div className="form-group">
               <label>Lease start</label>

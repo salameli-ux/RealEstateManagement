@@ -28,6 +28,7 @@ router.post('/', (req, res) => {
     unit,
     email,
     phone,
+    taxId,
     leaseStart,
     leaseEnd,
     rent,
@@ -39,12 +40,13 @@ router.post('/', (req, res) => {
     activity,
   } = req.body
 
-  const stmt = db.prepare(`INSERT INTO tenants (name, unit, email, phone, leaseStart, leaseEnd, rent, status, nextDue, contract, cycle, documents, activity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+  const stmt = db.prepare(`INSERT INTO tenants (name, unit, email, phone, taxId, leaseStart, leaseEnd, rent, status, nextDue, contract, cycle, documents, activity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
   const info = stmt.run(
     name,
     unit,
     email,
     phone,
+    taxId,
     leaseStart,
     leaseEnd,
     rent,
@@ -74,6 +76,7 @@ router.put('/:id', (req, res) => {
     unit,
     email,
     phone,
+    taxId,
     leaseStart,
     leaseEnd,
     rent,
@@ -85,11 +88,12 @@ router.put('/:id', (req, res) => {
     activity,
   } = req.body
 
-  db.prepare(`UPDATE tenants SET name = ?, unit = ?, email = ?, phone = ?, leaseStart = ?, leaseEnd = ?, rent = ?, status = ?, nextDue = ?, contract = ?, cycle = ?, documents = ?, activity = ? WHERE id = ?`).run(
+  db.prepare(`UPDATE tenants SET name = ?, unit = ?, email = ?, phone = ?, taxId = ?, leaseStart = ?, leaseEnd = ?, rent = ?, status = ?, nextDue = ?, contract = ?, cycle = ?, documents = ?, activity = ? WHERE id = ?`).run(
     name,
     unit,
     email,
     phone,
+    taxId,
     leaseStart,
     leaseEnd,
     rent,

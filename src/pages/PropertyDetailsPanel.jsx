@@ -1,51 +1,45 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { fetchProperty, fetchPayments } from '../services/api'
+import { fetchProperty, fetchPayments, fetchPropertyTenants } from '../services/api'
 import { tenantDetailsMap } from '../data/tenantDetails'
 import { ownerDetailsMap } from '../data/ownerDetails'
+import MailboxPanel from '../components/MailboxPanel'
+import TenantDetailsBlock from '../components/TenantDetailsBlock'
+import { formatLeaseDate, formatLeaseDuration } from '../utils/leaseDates'
 
-function MailboxPanel({ messages }) {
-  if (!messages?.length) {
-    return <p className="muted-text">No messages in mailbox.</p>
-  }
-
-  return (
-    <ul className="mailbox-list">
-      {messages.map((message, idx) => (
-        <li key={idx} className={`mailbox-item${message.unread ? ' unread' : ''}`}>
-          <div className="mailbox-item-header">
-            <span className="mailbox-subject">{message.subject}</span>
-            {message.unread ? <span className="mailbox-unread-dot" aria-label="Unread" /> : null}
-          </div>
-          <p className="mailbox-preview">{message.preview}</p>
-          <div className="mailbox-meta">
-            <span>{message.from}</span>
-            <span>{message.date}</span>
-          </div>
-        </li>
-      ))}
-    </ul>
-  )
+function staticTenantFallback(property) {
+  const info = tenantDetailsMap[property.title]
+  if (!info) return null
+  return { ...info, id: `static-${property.id}`, isCurrent: true }
 }
 
 export default function PropertyDetailsPanel() {
   const { id } = useParams()
   const [property, setProperty] = useState(null)
   const [payments, setPayments] = useState([])
+  const [propertyTenants, setPropertyTenants] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [ownerActiveTab, setOwnerActiveTab] = useState('personal')
-  const [tenantActiveTab, setTenantActiveTab] = useState('activity')
+  const [expandedPastTenantId, setExpandedPastTenantId] = useState(null)
 
   useEffect(() => {
     setOwnerActiveTab('personal')
-    setTenantActiveTab('activity')
+    setExpandedPastTenantId(null)
     setLoading(true)
     setError('')
-    Promise.all([fetchProperty(id), fetchPayments()])
-      .then(([propertyData, paymentData]) => {
+    Promise.all([
+      fetchProperty(id),
+      fetchPayments(),
+      fetchPropertyTenants(id).catch((err) => {
+        console.warn('Property tenants unavailable, using fallback', err)
+        return []
+      }),
+    ])
+      .then(([propertyData, paymentData, tenantData]) => {
         setProperty(propertyData)
         setPayments(paymentData)
+        setPropertyTenants(tenantData)
       })
       .catch((err) => {
         console.error('Failed to load property details', err)
@@ -88,20 +82,8 @@ export default function PropertyDetailsPanel() {
 
   const ownerInfo = ownerDetailsMap[property.title]
   const ownerPayments = payments.filter((payment) => Number(payment.propertyId) === Number(property.id))
-  const tenantInfo = tenantDetailsMap[property.title]
-  const tenantPaymentRows = payments.filter((payment) => payment.tenantName === tenantInfo?.name)
-  const deposit = tenantPaymentRows
-    .filter((payment) => payment.type === 'Deposit')
-    .reduce((sum, payment) => sum + (payment.amount || 0), 0)
-  const due = tenantPaymentRows
-    .filter((payment) => ['Due', 'Overdue', 'Pending'].includes(payment.status) && payment.type !== 'Refund')
-    .reduce((sum, payment) => sum + (payment.amount || 0), 0)
-  const paid = tenantPaymentRows
-    .filter((payment) => payment.status === 'Paid' && payment.type !== 'Refund')
-    .reduce((sum, payment) => sum + (payment.amount || 0), 0)
-  const position = paid + deposit - due
-  const positionLabel = position >= 0 ? 'Balanced' : `Debt $${Math.abs(position).toLocaleString()}`
-  const statusClass = position >= 0 ? 'status-paid' : 'status-overdue'
+  const currentTenant = propertyTenants.find((tenant) => tenant.isCurrent) || staticTenantFallback(property)
+  const pastTenants = propertyTenants.filter((tenant) => !tenant.isCurrent)
 
   return (
     <div className="properties-detail-pane">
@@ -244,105 +226,59 @@ export default function PropertyDetailsPanel() {
       </div>
 
       <div className="tenant-details-panel card">
-        <div className="tenant-card-header">
-          <div>
-            <h4>Tenant details</h4>
-            <p className="tenant-name">{tenantInfo?.name || 'No tenant assigned to this property yet.'}</p>
-          </div>
-          <span className={`status-badge ${tenantInfo?.status === 'Paid' ? 'status-paid' : tenantInfo?.status === 'Due' ? 'status-due' : 'status-overdue'}`}>
-            {tenantInfo?.status || 'Unassigned'}
-          </span>
-        </div>
-
-        {tenantInfo ? (
-          <>
-            <div className="tenant-tabs" role="tablist">
-              <button className={`tenant-tab ${tenantActiveTab === 'activity' ? 'active' : ''}`} type="button" role="tab" aria-selected={tenantActiveTab === 'activity'} onClick={() => setTenantActiveTab('activity')}>Activity</button>
-              <button className={`tenant-tab ${tenantActiveTab === 'personal' ? 'active' : ''}`} type="button" role="tab" aria-selected={tenantActiveTab === 'personal'} onClick={() => setTenantActiveTab('personal')}>Personal information</button>
-              <button className={`tenant-tab ${tenantActiveTab === 'financial' ? 'active' : ''}`} type="button" role="tab" aria-selected={tenantActiveTab === 'financial'} onClick={() => setTenantActiveTab('financial')}>Financial</button>
-              <button className={`tenant-tab ${tenantActiveTab === 'documents' ? 'active' : ''}`} type="button" role="tab" aria-selected={tenantActiveTab === 'documents'} onClick={() => setTenantActiveTab('documents')}>Documents</button>
-              <button className={`tenant-tab ${tenantActiveTab === 'mailbox' ? 'active' : ''}`} type="button" role="tab" aria-selected={tenantActiveTab === 'mailbox'} onClick={() => setTenantActiveTab('mailbox')}>Mailbox</button>
-            </div>
-
-            {tenantActiveTab === 'activity' && (
-              <div className="tenant-tab-panel tenant-activity">
-                <ul>
-                  {tenantInfo.activity.map((item, idx) => (
-                    <li key={idx}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {tenantActiveTab === 'personal' && (
-              <div className="tenant-tab-panel tenant-personal-grid property-meta-grid">
-                <div>
-                  <span className="meta-label">Name</span>
-                  <p>{tenantInfo.name}</p>
-                </div>
-                <div>
-                  <span className="meta-label">Email</span>
-                  <p>{tenantInfo.email}</p>
-                </div>
-                <div>
-                  <span className="meta-label">Phone</span>
-                  <p>{tenantInfo.phone}</p>
-                </div>
-                <div>
-                  <span className="meta-label">Unit</span>
-                  <p>{tenantInfo.unit}</p>
-                </div>
-                <div>
-                  <span className="meta-label">SSN / ITIN / EIN</span>
-                  <p>{tenantInfo.taxId || '—'}</p>
-                </div>
-              </div>
-            )}
-
-            {tenantActiveTab === 'financial' && (
-              <div className="tenant-tab-panel">
-                <div className="tenant-contact-grid">
-                  <div className="tenant-detail-card">
-                    <h5>Lease</h5>
-                    <p><strong>Term:</strong> {tenantInfo.contract}</p>
-                    <p><strong>Cycle:</strong> {tenantInfo.cycle}</p>
-                    <p><strong>Period:</strong> {tenantInfo.leaseStart} — {tenantInfo.leaseEnd}</p>
-                    {tenantInfo.contractUrl ? (
-                      <a className="link-button" href={tenantInfo.contractUrl} target="_blank" rel="noreferrer">View contract</a>
-                    ) : null}
-                  </div>
-                  <div className="tenant-detail-card">
-                    <h5>Financials</h5>
-                    <p><strong>Rent:</strong> {tenantInfo.rent}</p>
-                    <p><strong>Deposit:</strong> ${deposit.toLocaleString()}</p>
-                    <p><strong>Due amount:</strong> ${due.toLocaleString()}</p>
-                    <p><strong>Position:</strong> <span className={statusClass}>{positionLabel}</span></p>
-                    <p><strong>Next due:</strong> {tenantInfo.nextDue}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {tenantActiveTab === 'documents' && (
-              <div className="tenant-tab-panel">
-                <ul className="tenant-documents-list">
-                  {tenantInfo.documents.map((doc, idx) => (
-                    <li key={idx}>{doc}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {tenantActiveTab === 'mailbox' && (
-              <div className="tenant-tab-panel mailbox-panel">
-                <MailboxPanel messages={tenantInfo.mailbox} />
-              </div>
-            )}
-          </>
+        {currentTenant ? (
+          <TenantDetailsBlock key={currentTenant.id} tenant={currentTenant} payments={payments} />
         ) : (
-          <p className="muted-text">This property does not have a linked tenant contract yet.</p>
+          <>
+            <div className="tenant-card-header">
+              <div>
+                <h4>Tenant details</h4>
+                <p className="tenant-name">No tenant assigned to this property yet.</p>
+              </div>
+            </div>
+            <p className="muted-text">This property does not have a linked tenant contract yet.</p>
+          </>
         )}
       </div>
+
+      {pastTenants.length > 0 && (
+        <div className="past-tenants-section card">
+          <h4 className="past-tenants-heading">Previous tenants</h4>
+          <ul className="past-tenants-list">
+            {pastTenants.map((tenant) => {
+              const isExpanded = expandedPastTenantId === tenant.id
+              return (
+                <li key={tenant.id} className={`past-tenant-item${isExpanded ? ' expanded' : ''}`}>
+                  <button
+                    type="button"
+                    className="past-tenant-row"
+                    aria-expanded={isExpanded}
+                    onClick={() => setExpandedPastTenantId((prev) => (prev === tenant.id ? null : tenant.id))}
+                  >
+                    <span className="past-tenant-name">{tenant.name}</span>
+                    <span className="past-tenant-period">
+                      {formatLeaseDate(tenant.leaseStart)} — {formatLeaseDate(tenant.leaseEnd)}
+                    </span>
+                    <span className="past-tenant-duration">{formatLeaseDuration(tenant.leaseStart, tenant.leaseEnd)}</span>
+                    <span className="past-tenant-chevron" aria-hidden="true">{isExpanded ? '▲' : '▼'}</span>
+                  </button>
+                  {isExpanded && (
+                    <div className="past-tenant-expanded">
+                      <TenantDetailsBlock
+                        key={tenant.id}
+                        tenant={tenant}
+                        payments={payments}
+                        compactHeader
+                        defaultTab="personal"
+                      />
+                    </div>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }

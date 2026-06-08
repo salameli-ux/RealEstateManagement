@@ -1,11 +1,21 @@
 import express from 'express'
 import db from '../db.js'
+import { formatTenant } from '../tenantFormat.js'
 
 const router = express.Router()
 
 router.get('/', (req, res) => {
   const properties = db.prepare('SELECT * FROM properties ORDER BY id DESC').all()
   res.json(properties)
+})
+
+router.get('/:id/tenants', (req, res) => {
+  const property = db.prepare('SELECT id FROM properties WHERE id = ?').get(req.params.id)
+  if (!property) return res.status(404).json({ error: 'Property not found' })
+  const tenants = db
+    .prepare('SELECT * FROM tenants WHERE propertyId = ? ORDER BY isCurrent DESC, leaseEnd DESC, id DESC')
+    .all(req.params.id)
+  res.json(tenants.map(formatTenant))
 })
 
 router.get('/:id', (req, res) => {

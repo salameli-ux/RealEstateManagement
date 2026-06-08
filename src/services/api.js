@@ -28,6 +28,7 @@ export const fetchCurrentUser = () => request('/auth/me')
 
 export const fetchProperties = () => request('/properties')
 export const fetchProperty = (id) => request(`/properties/${id}`)
+export const fetchPropertyTenants = (id) => request(`/properties/${id}/tenants`)
 export const createProperty = (property) => request('/properties', { method: 'POST', body: property })
 export const updateProperty = (id, property) => request(`/properties/${id}`, { method: 'PUT', body: property })
 export const deleteProperty = (id) => request(`/properties/${id}`, { method: 'DELETE' })

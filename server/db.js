@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS properties (
 
 CREATE TABLE IF NOT EXISTS tenants (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  propertyId INTEGER,
+  isCurrent INTEGER NOT NULL DEFAULT 0,
   name TEXT NOT NULL,
   unit TEXT,
   email TEXT,
@@ -59,9 +61,11 @@ CREATE TABLE IF NOT EXISTS tenants (
   status TEXT,
   nextDue TEXT,
   contract TEXT,
+  contractUrl TEXT,
   cycle TEXT,
   documents TEXT,
-  activity TEXT
+  activity TEXT,
+  mailbox TEXT
 );
 
 CREATE TABLE IF NOT EXISTS payments (
@@ -96,6 +100,18 @@ if (!propertyColumns.includes('ownerTaxId')) {
 const tenantColumns = db.prepare('PRAGMA table_info(tenants)').all().map((row) => row.name)
 if (!tenantColumns.includes('taxId')) {
   db.prepare('ALTER TABLE tenants ADD COLUMN taxId TEXT').run()
+}
+if (!tenantColumns.includes('propertyId')) {
+  db.prepare('ALTER TABLE tenants ADD COLUMN propertyId INTEGER').run()
+}
+if (!tenantColumns.includes('isCurrent')) {
+  db.prepare('ALTER TABLE tenants ADD COLUMN isCurrent INTEGER NOT NULL DEFAULT 0').run()
+}
+if (!tenantColumns.includes('contractUrl')) {
+  db.prepare('ALTER TABLE tenants ADD COLUMN contractUrl TEXT').run()
+}
+if (!tenantColumns.includes('mailbox')) {
+  db.prepare('ALTER TABLE tenants ADD COLUMN mailbox TEXT').run()
 }
 
 const seedTenantTaxIdsByName = {
@@ -194,8 +210,22 @@ if (miamiProperty) {
   )
 }
 
+const atlantaProperty = db.prepare("SELECT id FROM properties WHERE title = 'Atlanta Duplex'").get()
+const chicagoProperty = db.prepare("SELECT id FROM properties WHERE title = 'Chicago Townhome'").get()
+const johnSmith = db.prepare("SELECT id FROM tenants WHERE name = 'John Smith'").get()
+const marcusLee = db.prepare("SELECT id FROM tenants WHERE name = 'Marcus Lee'").get()
+
+if (atlantaProperty && johnSmith) {
+  db.prepare('UPDATE tenants SET propertyId = ?, isCurrent = 1 WHERE id = ?').run(atlantaProperty.id, johnSmith.id)
+}
+if (chicagoProperty && marcusLee) {
+  db.prepare('UPDATE tenants SET propertyId = ?, isCurrent = 1 WHERE id = ?').run(chicagoProperty.id, marcusLee.id)
+}
+
 if (miamiTenant) {
   db.prepare(`UPDATE tenants SET
+    propertyId = ?,
+    isCurrent = 1,
     unit = ?,
     email = ?,
     phone = ?,
@@ -206,10 +236,13 @@ if (miamiTenant) {
     status = ?,
     nextDue = ?,
     contract = ?,
+    contractUrl = ?,
     cycle = ?,
     documents = ?,
-    activity = ?
+    activity = ?,
+    mailbox = ?
     WHERE id = ?`).run(
+    miamiProperty?.id || null,
     'Unit 12B — 18 Ocean Drive',
     'kelly.rivera@example.com',
     '(305) 555-0231',
@@ -220,6 +253,7 @@ if (miamiTenant) {
     'Due',
     'Jun 1, 2025',
     '12 month lease',
+    'https://example.com/contracts/miami-condo-unit-12b.pdf',
     'Monthly',
     JSON.stringify([
       'Signed lease agreement',
@@ -242,8 +276,147 @@ if (miamiTenant) {
       'Mar 18, 2025 — Welcome packet delivered',
       'Mar 15, 2025 — Move-in day completed',
     ]),
+    JSON.stringify([
+      { subject: 'June rent due — $2,850', from: 'Billing', date: 'Jun 1, 2025', preview: 'Your June rent for Unit 12B is due today. Pay online or via ACH.', unread: true },
+      { subject: 'Payment reminder', from: 'Billing', date: 'May 29, 2025', preview: 'Friendly reminder: June rent is due in 3 days.', unread: true },
+      { subject: 'Rent receipt — May', from: 'Property Management', date: 'May 15, 2025', preview: 'Thank you. Your May rent of $2,850 was received.', unread: false },
+      { subject: 'Welcome to 18 Ocean Drive', from: 'Property Management', date: 'Mar 18, 2025', preview: 'Welcome! Move-in instructions and parking details inside.', unread: false },
+    ]),
     miamiTenant.id
   )
+}
+
+if (miamiProperty) {
+  const pastTenantExists = db.prepare('SELECT id FROM tenants WHERE name = ? AND propertyId = ?')
+  const insertPastTenant = db.prepare(`INSERT INTO tenants (
+    propertyId, isCurrent, name, unit, email, phone, taxId, leaseStart, leaseEnd, rent, status, nextDue,
+    contract, contractUrl, cycle, documents, activity, mailbox
+  ) VALUES (?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+
+  const miamiPastTenants = [
+    {
+      name: 'Marco Alvarez',
+      unit: 'Unit 12B — 18 Ocean Drive',
+      email: 'marco.alvarez@example.com',
+      phone: '(305) 555-0142',
+      taxId: '612-34-8901',
+      leaseStart: '2022-06-01',
+      leaseEnd: '2024-02-28',
+      rent: '$2,650',
+      status: 'Paid',
+      nextDue: '',
+      contract: '12 month lease',
+      contractUrl: 'https://example.com/contracts/miami-marco-alvarez.pdf',
+      cycle: 'Monthly',
+      documents: [
+        'Signed lease agreement',
+        'Driver license copy',
+        'Security deposit receipt ($5,300)',
+        'Renter insurance certificate',
+        'Move-out inspection report',
+        'Final utility statement',
+      ],
+      activity: [
+        'Feb 28, 2024 — Move-out completed',
+        'Feb 15, 2024 — Lease non-renewal notice sent',
+        'Feb 1, 2024 — Final rent received ($2,650)',
+        'Jan 10, 2024 — HVAC maintenance completed',
+        'Dec 1, 2023 — December rent received',
+        'Jun 1, 2022 — Move-in completed',
+      ],
+      mailbox: [
+        { subject: 'Lease ended — thank you', from: 'Property Management', date: 'Feb 28, 2024', preview: 'Your lease at 18 Ocean Drive has ended. Deposit review underway.', unread: false },
+        { subject: 'Non-renewal confirmation', from: 'Leasing', date: 'Feb 15, 2024', preview: 'We received your notice to vacate at end of term.', unread: false },
+        { subject: 'Rent receipt — February', from: 'Billing', date: 'Feb 1, 2024', preview: 'Final month rent of $2,650 received.', unread: false },
+      ],
+    },
+    {
+      name: 'Diana Brooks',
+      unit: 'Unit 12B — 18 Ocean Drive',
+      email: 'diana.brooks@example.com',
+      phone: '(305) 555-0198',
+      taxId: '543-21-0987',
+      leaseStart: '2020-03-01',
+      leaseEnd: '2022-05-31',
+      rent: '$2,400',
+      status: 'Paid',
+      nextDue: '',
+      contract: '12 month lease',
+      contractUrl: 'https://example.com/contracts/miami-diana-brooks.pdf',
+      cycle: 'Monthly',
+      documents: [
+        'Signed lease agreement',
+        'Passport copy',
+        'Security deposit receipt ($4,800)',
+        'Pet addendum — Milo (cat)',
+        'Move-in inspection checklist',
+        'Lease termination letter',
+      ],
+      activity: [
+        'May 31, 2022 — Move-out completed',
+        'May 1, 2022 — Final rent received ($2,400)',
+        'Apr 12, 2022 — Relocation notice received',
+        'Mar 1, 2022 — March rent received',
+        'Mar 15, 2020 — Move-in completed',
+      ],
+      mailbox: [
+        { subject: 'Deposit returned', from: 'Accounting', date: 'Jun 10, 2022', preview: 'Your security deposit refund of $4,200 has been processed.', unread: false },
+        { subject: 'Move-out instructions', from: 'Property Management', date: 'May 15, 2022', preview: 'Please review the attached move-out checklist.', unread: false },
+        { subject: 'Rent receipt — May', from: 'Billing', date: 'May 1, 2022', preview: 'May rent of $2,400 received.', unread: false },
+      ],
+    },
+  ]
+
+  for (const tenant of miamiPastTenants) {
+    if (!pastTenantExists.get(tenant.name, miamiProperty.id)) {
+      insertPastTenant.run(
+        miamiProperty.id,
+        tenant.name,
+        tenant.unit,
+        tenant.email,
+        tenant.phone,
+        tenant.taxId,
+        tenant.leaseStart,
+        tenant.leaseEnd,
+        tenant.rent,
+        tenant.status,
+        tenant.nextDue,
+        tenant.contract,
+        tenant.contractUrl,
+        tenant.cycle,
+        JSON.stringify(tenant.documents),
+        JSON.stringify(tenant.activity),
+        JSON.stringify(tenant.mailbox)
+      )
+    }
+  }
+
+  const marco = db.prepare("SELECT id FROM tenants WHERE name = 'Marco Alvarez' AND propertyId = ?").get(miamiProperty.id)
+  const diana = db.prepare("SELECT id FROM tenants WHERE name = 'Diana Brooks' AND propertyId = ?").get(miamiProperty.id)
+  const insertPayment = db.prepare(`INSERT INTO payments (invoiceNumber, tenantId, propertyId, amount, currency, type, status, dueDate, paidDate, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+  const paymentExists = db.prepare('SELECT id FROM payments WHERE invoiceNumber = ?')
+
+  const pastPayments = []
+  if (marco) {
+    pastPayments.push(
+      ['INV-MIA-MARCO-0224', marco.id, miamiProperty.id, 2650, 'USD', 'Rent', 'Paid', '2024-02-01', '2024-02-01', 'February rent — Marco Alvarez'],
+      ['INV-MIA-MARCO-DEP', marco.id, miamiProperty.id, 5300, 'USD', 'Deposit', 'Paid', '2022-06-01', '2022-06-01', 'Security deposit — Marco Alvarez'],
+      ['INV-MIA-MARCO-0124', marco.id, miamiProperty.id, 2650, 'USD', 'Rent', 'Paid', '2024-01-01', '2024-01-03', 'January rent — Marco Alvarez']
+    )
+  }
+  if (diana) {
+    pastPayments.push(
+      ['INV-MIA-DIANA-0522', diana.id, miamiProperty.id, 2400, 'USD', 'Rent', 'Paid', '2022-05-01', '2022-05-02', 'May rent — Diana Brooks'],
+      ['INV-MIA-DIANA-DEP', diana.id, miamiProperty.id, 4800, 'USD', 'Deposit', 'Paid', '2020-03-01', '2020-03-01', 'Security deposit — Diana Brooks'],
+      ['INV-MIA-DIANA-REF', diana.id, miamiProperty.id, 4200, 'USD', 'Refund', 'Paid', '2022-06-10', '2022-06-10', 'Deposit refund — Diana Brooks']
+    )
+  }
+
+  for (const payment of pastPayments) {
+    if (!paymentExists.get(payment[0])) {
+      insertPayment.run(...payment)
+    }
+  }
 }
 
 if (miamiProperty && miamiTenant) {

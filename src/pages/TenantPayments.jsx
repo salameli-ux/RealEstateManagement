@@ -18,13 +18,19 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function DepositField({ label, value, readOnly = true, name, onChange, type = 'text', placeholder, id }) {
+function DepositField({ label, value, readOnly = true, name, onChange, type = 'text', placeholder, id, options }) {
   const isAmount = name === 'amount'
   return (
     <div className="ach-deposit-field">
       <label htmlFor={id || name}>{label}</label>
       {readOnly ? (
         <div className="ach-deposit-value">{value || '—'}</div>
+      ) : options ? (
+        <select id={id || name} name={name} value={value} onChange={onChange}>
+          {options.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
       ) : (
         <input
           id={id || name}
@@ -61,6 +67,19 @@ export default function TenantPayments() {
     recurringEnabled: false,
     recurringCycle: 'Monthly',
     recurringDay: '1',
+  })
+  const [creditForm, setCreditForm] = useState({
+    cardName: '',
+    cardNumber: '',
+    cardExp: '',
+    cardCvv: '',
+  })
+  const [achForm, setAchForm] = useState({
+    accountHolder: '',
+    bankName: '',
+    accountType: 'Checking',
+    routingNumber: '',
+    accountNumber: '',
   })
   const amountInitializedRef = useRef(false)
   const lastTenantIdRef = useRef(null)
@@ -128,6 +147,23 @@ export default function TenantPayments() {
     }
   }, [tenant, suggestedAmount])
 
+  useEffect(() => {
+    if (!tenant) return
+    setCreditForm({
+      cardName: tenant.bank?.bankAccountHolder || tenant.name || '',
+      cardNumber: '',
+      cardExp: tenant.bank?.cardExp || '',
+      cardCvv: '',
+    })
+    setAchForm({
+      accountHolder: tenant.bank?.bankAccountHolder || tenant.name || '',
+      bankName: tenant.bank?.bankName || '',
+      accountType: tenant.bank?.bankAccountType || 'Checking',
+      routingNumber: '',
+      accountNumber: '',
+    })
+  }, [tenant?.id])
+
   if (!session || session.role !== 'tenant') {
     return <Navigate to="/" replace />
   }
@@ -140,9 +176,38 @@ export default function TenantPayments() {
     }))
   }
 
+  const handleCreditChange = (event) => {
+    const { name, value } = event.target
+    setCreditForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleAchChange = (event) => {
+    const { name, value } = event.target
+    setAchForm((prev) => ({ ...prev, [name]: value }))
+  }
+
   const handlePay = async (event) => {
     event.preventDefault()
     if (!tenant) return
+    if (payMethod === 'Credit') {
+      const missingCard = !creditForm.cardName.trim()
+        || !creditForm.cardNumber.trim()
+        || !creditForm.cardExp.trim()
+        || !creditForm.cardCvv.trim()
+      if (missingCard) {
+        setError('Enter credit card details.')
+        return
+      }
+    } else {
+      const missingAch = !achForm.accountHolder.trim()
+        || !achForm.bankName.trim()
+        || !achForm.routingNumber.trim()
+        || !achForm.accountNumber.trim()
+      if (missingAch) {
+        setError('Enter bank account details.')
+        return
+      }
+    }
     setSubmitting(true)
     setError('')
     setSuccessMessage('')
@@ -150,7 +215,7 @@ export default function TenantPayments() {
       const result = await submitTenantPayment({
         tenantId: tenant.id,
         method: payMethod,
-        amount: Number(depositForm.amount),
+        amount: parseMoney(depositForm.amount),
         paymentDate: depositForm.paymentDate,
         reference: depositForm.reference,
         description: depositForm.description,
@@ -200,13 +265,6 @@ export default function TenantPayments() {
 
   return (
     <MainLayout>
-      <div className="page-header">
-        <div>
-          <h2>Payments</h2>
-          <p>Submit rent deposits and set up recurring payments for {tenant.name}.</p>
-        </div>
-      </div>
-
       <div className="ach-detail-pane tenant-payments-page">
         <form className="ach-deposit-flow" onSubmit={handlePay}>
           {successMessage ? (
@@ -216,7 +274,8 @@ export default function TenantPayments() {
             </div>
           ) : null}
 
-          <div className="card ach-deposit-slip">
+          <div className="tenant-payment-form-grid">
+            <div className="card ach-deposit-slip">
             <div className="ach-deposit-slip-header">
               <div>
                 <h3>Deposit slip</h3>
@@ -238,7 +297,7 @@ export default function TenantPayments() {
 
             <div className="ach-deposit-section">
               <h4>Recurring payments</h4>
-              <p className="muted-text">Saved to your account now — automatic processing will be enabled soon.</p>
+              <p className="muted-text">Saved now — auto-pay coming soon.</p>
               <div className="ach-deposit-grid">
                 <div className="ach-deposit-field ach-recurring-toggle">
                   <label htmlFor="recurringEnabled">
@@ -249,7 +308,7 @@ export default function TenantPayments() {
                       checked={depositForm.recurringEnabled}
                       onChange={handleFormChange}
                     />
-                    {' '}Enable recurring rent payment
+                    {' '}Enable recurring payment
                   </label>
                 </div>
                 {depositForm.recurringEnabled ? (
@@ -279,65 +338,187 @@ export default function TenantPayments() {
                 ) : null}
               </div>
             </div>
-          </div>
-
-          <div className="card ach-pay-panel">
-            <p className="ach-submit-note">
-              Demo: submit simulates a completed {payMethod === 'Credit' ? 'credit card' : 'ACH'} deposit.
-              Rent is credited to the owner ledger; the Management Fee is transferred to the PM account.
-            </p>
-            <div className="tenant-tabs" role="tablist">
-              <button className={`tenant-tab ${payMethod === 'ACH' ? 'active' : ''}`} type="button" onClick={() => setPayMethod('ACH')}>ACH transfer</button>
-              <button className={`tenant-tab ${payMethod === 'Credit' ? 'active' : ''}`} type="button" onClick={() => setPayMethod('Credit')}>Credit card</button>
             </div>
 
-            {error ? <p className="form-error">{error}</p> : null}
+            <div className="card tenant-pay-bubble">
+              <fieldset className="tenant-pay-method">
+                <legend className="visually-hidden">Payment method</legend>
+                <label className="tenant-pay-radio">
+                  <input
+                    type="radio"
+                    name="payMethod"
+                    value="ACH"
+                    checked={payMethod === 'ACH'}
+                    onChange={() => {
+                      setPayMethod('ACH')
+                      setError('')
+                    }}
+                  />
+                  ACH transfer
+                </label>
+                <label className="tenant-pay-radio">
+                  <input
+                    type="radio"
+                    name="payMethod"
+                    value="Credit"
+                    checked={payMethod === 'Credit'}
+                    onChange={() => {
+                      setPayMethod('Credit')
+                      setError('')
+                    }}
+                  />
+                  Credit card
+                </label>
+              </fieldset>
 
-            <button className="primary-button ach-submit-button" type="submit" disabled={submitting || !depositForm.amount}>
-              {submitting ? 'Processing...' : payMethod === 'Credit' ? 'Submit credit payment' : 'Submit payment'}
-            </button>
+              {payMethod === 'ACH' ? (
+                <div className="tenant-pay-method-fields">
+                  <DepositField
+                    label="Account holder"
+                    value={achForm.accountHolder}
+                    readOnly={false}
+                    name="accountHolder"
+                    onChange={handleAchChange}
+                    id="accountHolder"
+                    placeholder="Kelly Rivera"
+                  />
+                  <DepositField
+                    label="Bank name"
+                    value={achForm.bankName}
+                    readOnly={false}
+                    name="bankName"
+                    onChange={handleAchChange}
+                    id="bankName"
+                    placeholder="Bank of America"
+                  />
+                  <DepositField
+                    label="Account type"
+                    value={achForm.accountType}
+                    readOnly={false}
+                    name="accountType"
+                    onChange={handleAchChange}
+                    id="accountType"
+                    options={['Checking', 'Savings']}
+                  />
+                  <DepositField
+                    label="Routing number"
+                    value={achForm.routingNumber}
+                    readOnly={false}
+                    name="routingNumber"
+                    onChange={handleAchChange}
+                    id="routingNumber"
+                    placeholder="063100277"
+                  />
+                  <DepositField
+                    label="Account number"
+                    value={achForm.accountNumber}
+                    readOnly={false}
+                    name="accountNumber"
+                    onChange={handleAchChange}
+                    id="accountNumber"
+                    placeholder="4890127890"
+                  />
+                </div>
+              ) : (
+                <div className="tenant-pay-method-fields">
+                  <DepositField
+                    label="Name on card"
+                    value={creditForm.cardName}
+                    readOnly={false}
+                    name="cardName"
+                    onChange={handleCreditChange}
+                    id="cardName"
+                    placeholder="Kelly Rivera"
+                  />
+                  <DepositField
+                    label="Card number"
+                    value={creditForm.cardNumber}
+                    readOnly={false}
+                    name="cardNumber"
+                    onChange={handleCreditChange}
+                    id="cardNumber"
+                    placeholder="4242 4242 4242 4242"
+                  />
+                  <DepositField
+                    label="Expiration"
+                    value={creditForm.cardExp}
+                    readOnly={false}
+                    name="cardExp"
+                    onChange={handleCreditChange}
+                    id="cardExp"
+                    placeholder="MM/YY"
+                  />
+                  <DepositField
+                    label="CVV"
+                    value={creditForm.cardCvv}
+                    readOnly={false}
+                    name="cardCvv"
+                    onChange={handleCreditChange}
+                    id="cardCvv"
+                    placeholder="123"
+                  />
+                </div>
+              )}
+
+              {error ? <p className="form-error">{error}</p> : null}
+
+              <button className="primary-button ach-submit-button" type="submit" disabled={submitting || !depositForm.amount}>
+                {submitting ? 'Processing...' : 'Submit payment'}
+              </button>
+            </div>
           </div>
         </form>
 
         <div className="card tenant-payment-history">
-          <h3>Payment history</h3>
+          <h3 className="ach-list-heading">Payment history</h3>
           {requests.length === 0 && payments.length === 0 ? (
-            <p className="muted-text">No payments submitted yet.</p>
+            <p className="ach-list-empty">No payments submitted yet.</p>
           ) : (
             <>
               {requests.length > 0 ? (
                 <div className="tenant-payment-history-section">
-                  <h4>Your payment requests</h4>
-                  <ul className="tenant-payment-request-list">
+                  <h4 className="ach-list-heading">Your payment requests</h4>
+                  <div className="contact-group tenant-history-list">
                     {requests.map((item) => (
-                      <li key={item.id} className="tenant-payment-request-item">
-                        <div>
-                          <strong>${item.amount.toLocaleString()}</strong>
-                          <span className="subtle-text"> · {item.paymentDate || '—'}</span>
-                          {item.recurringEnabled ? (
-                            <span className="pill">Recurring {item.recurringCycle?.toLowerCase() || ''}</span>
-                          ) : null}
+                      <div key={item.id} className="contact-row tenant-history-row">
+                        <div className="contact-row-body">
+                          <span className="contact-row-title">
+                            ${item.amount.toLocaleString()} · {item.paymentDate || '—'}
+                            {item.recurringEnabled ? ` · Recurring ${item.recurringCycle?.toLowerCase() || ''}` : ''}
+                          </span>
                         </div>
-                        <span className={`status-badge ${item.status === 'Completed' ? 'status-paid' : ''}`}>{item.status}</span>
-                      </li>
+                        <span className={`status-badge ${item.status === 'Completed' ? 'status-paid' : 'status-due'}`}>
+                          {item.status}
+                        </span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               ) : null}
               {payments.length > 0 ? (
                 <div className="tenant-payment-history-section">
-                  <h4>Ledger entries</h4>
-                  <ul className="tenant-payment-request-list">
+                  <h4 className="ach-list-heading">Ledger entries</h4>
+                  <div className="contact-group tenant-history-list">
                     {payments.map((payment) => (
-                      <li key={payment.id} className="tenant-payment-request-item">
-                        <div>
-                          <strong>{payment.type}</strong> — ${payment.amount.toLocaleString()}
-                          <p className="subtle-text">{payment.description || payment.invoiceNumber}</p>
+                      <div key={payment.id} className="contact-row tenant-history-row">
+                        <div className="contact-row-body">
+                          <span className="contact-row-title">
+                            {payment.type} — ${payment.amount.toLocaleString()}
+                            {payment.paymentDate || payment.paidDate ? ` · ${payment.paidDate || payment.paymentDate}` : ''}
+                          </span>
                         </div>
-                        <span className={`status-badge ${payment.status === 'Paid' ? 'status-paid' : ''}`}>{payment.status}</span>
-                      </li>
+                        <span className={`status-badge ${
+                          payment.status === 'Paid'
+                            ? 'status-paid'
+                            : payment.status === 'Overdue'
+                              ? 'status-overdue'
+                              : 'status-due'
+                        }`}>
+                          {payment.status}
+                        </span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               ) : null}
             </>

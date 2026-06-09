@@ -217,7 +217,7 @@ export default function Properties() {
           <input name="ownerTaxId" value={formState.ownerTaxId} onChange={handleChange} placeholder="123-45-6789" />
         </div>
         <div className="form-group">
-          <label>Management fee % (contract)</label>
+          <label>Management Fee %</label>
           <input
             name="managementFeePercent"
             value={formState.managementFeePercent}

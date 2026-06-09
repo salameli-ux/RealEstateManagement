@@ -102,13 +102,13 @@ export function recordTenantDeposit(db, {
     'Paid',
     paidDate,
     paidDate,
-    `Property management fee (${feeLabel}) — ${tenant.name}`
+    `Management Fee (${feeLabel}) — ${tenant.name}`
   )
 
   const activity = parseActivity(tenant)
   activity.unshift(
     `${paidDate} — ${transferLabel} deposit of $${payAmount.toLocaleString()} posted to owner ledger`,
-    `${paidDate} — Management fee $${mgmtAmount.toLocaleString()} (${feeLabel}) transferred to PM account`
+    `${paidDate} — Management Fee $${mgmtAmount.toLocaleString()} (${feeLabel}) transferred to PM account`
   )
   db.prepare('UPDATE tenants SET status = ?, activity = ? WHERE id = ?').run(
     'Paid',

@@ -184,7 +184,7 @@ function buildTenantPayments(tenantId, propertyId, property, tenantSeed, feePerc
     'Paid',
     '2025-05-31',
     '2025-05-31',
-    `May PM fee (${feePercent}%) — ${property.title}`,
+    `May Management Fee (${feePercent}%) — ${property.title}`,
   ])
   return rows
 }

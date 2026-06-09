@@ -162,7 +162,7 @@ export default function TenantPayments() {
         ? `${result.managementFeePercent}%`
         : 'contract rate'
       const feeNote = result.managementFee
-        ? ` A ${feeLabel} management fee ($${result.managementFee.toLocaleString()}) was transferred to the PM account.`
+        ? ` A ${feeLabel} Management Fee ($${result.managementFee.toLocaleString()}) was transferred to the PM account.`
         : ''
       setSuccessMessage(
         `Payment of $${result.amount.toLocaleString()} posted to the owner ledger.${feeNote}`
@@ -284,7 +284,7 @@ export default function TenantPayments() {
           <div className="card ach-pay-panel">
             <p className="ach-submit-note">
               Demo: submit simulates a completed {payMethod === 'Credit' ? 'credit card' : 'ACH'} deposit.
-              Rent is credited to the owner ledger; the contract management fee is transferred to the PM account.
+              Rent is credited to the owner ledger; the Management Fee is transferred to the PM account.
             </p>
             <div className="tenant-tabs" role="tablist">
               <button className={`tenant-tab ${payMethod === 'ACH' ? 'active' : ''}`} type="button" onClick={() => setPayMethod('ACH')}>ACH transfer</button>

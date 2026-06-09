@@ -33,8 +33,8 @@ export default function OwnerDetailsBlock({ property, payments }) {
               <h4>Owner details</h4>
               <p className="owner-name">{property.ownerName || '—'}</p>
             </div>
-            <span className="owner-contract-fee-pill" title="Management fee rate from owner contract">
-              Contract: {contractFeeLabel}
+            <span className="owner-contract-fee-pill" title="Management Fee rate from owner contract">
+              Management Fee: {contractFeeLabel}
             </span>
           </div>
 
@@ -44,7 +44,7 @@ export default function OwnerDetailsBlock({ property, payments }) {
             <button className={`tenant-tab ${ownerActiveTab === 'documents' ? 'active' : ''}`} type="button" role="tab" aria-selected={ownerActiveTab === 'documents'} onClick={() => setOwnerActiveTab('documents')}>Documents</button>
             <button className={`tenant-tab ${ownerActiveTab === 'mailbox' ? 'active' : ''}`} type="button" role="tab" aria-selected={ownerActiveTab === 'mailbox'} onClick={() => setOwnerActiveTab('mailbox')}>Mailbox</button>
             <button className={`tenant-tab ${ownerActiveTab === 'ledger' ? 'active' : ''}`} type="button" role="tab" aria-selected={ownerActiveTab === 'ledger'} onClick={() => setOwnerActiveTab('ledger')}>Ledger</button>
-            <button className={`tenant-tab ${ownerActiveTab === 'management' ? 'active' : ''}`} type="button" role="tab" aria-selected={ownerActiveTab === 'management'} onClick={() => setOwnerActiveTab('management')}>Management fees</button>
+            <button className={`tenant-tab ${ownerActiveTab === 'management' ? 'active' : ''}`} type="button" role="tab" aria-selected={ownerActiveTab === 'management'} onClick={() => setOwnerActiveTab('management')}>Management Fee</button>
           </div>
 
           {ownerActiveTab === 'personal' && (
@@ -106,7 +106,7 @@ export default function OwnerDetailsBlock({ property, payments }) {
                       <p>${property.zillowEstimate.toLocaleString()}</p>
                     </div>
                     <div>
-                      <span className="meta-label">Management contract</span>
+                      <span className="meta-label">Management Fee</span>
                       <p>{contractFeeLabel} of rent collected</p>
                     </div>
                     <div>
@@ -142,7 +142,7 @@ export default function OwnerDetailsBlock({ property, payments }) {
           {ownerActiveTab === 'management' && (
             <div className="tenant-tab-panel owner-mgmt-panel">
               <div className="owner-contract-fee-banner">
-                <span className="meta-label">Contract management fee</span>
+                <span className="meta-label">Management Fee</span>
                 <p><strong>{contractFeeLabel}</strong> of each rent deposit is transferred to the property manager.</p>
               </div>
               {managementFees.entries.length ? (
@@ -168,7 +168,7 @@ export default function OwnerDetailsBlock({ property, payments }) {
                         <div key={payment.id} className="owner-ledger-row">
                           <span className="owner-ledger-col owner-ledger-date">{formatLedgerDate(payment.paidDate || payment.dueDate)}</span>
                           <span className="owner-ledger-col owner-ledger-code">{getLedgerOperationCode(payment)}</span>
-                          <span className="owner-ledger-col owner-ledger-comment">{payment.description || 'Management fee'}</span>
+                          <span className="owner-ledger-col owner-ledger-comment">{payment.description || 'Management Fee'}</span>
                           <LedgerRowActions
                             payment={payment}
                             onOpenInvoice={setInvoicePayment}
@@ -182,7 +182,7 @@ export default function OwnerDetailsBlock({ property, payments }) {
                   </div>
                 </>
               ) : (
-                <p className="muted-text">No management fees recorded for this property yet.</p>
+                <p className="muted-text">No Management Fee entries recorded for this property yet.</p>
               )}
             </div>
           )}

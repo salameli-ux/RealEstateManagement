@@ -30,7 +30,7 @@ const OPERATION_LABELS = {
   HOA: 'HOA assessment',
   Insurance: 'Insurance',
   Tax: 'Property tax',
-  Management: 'Management fee',
+  Management: 'Management Fee',
   Monthly: 'Monthly fee',
   Convenience: 'Convenience fee',
   'Work Order': 'Work order fee',

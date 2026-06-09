@@ -146,7 +146,7 @@ export default function AchCredit() {
       setSuccessMessage(
         `Deposit done — $${result.amount.toLocaleString()} recorded for ${result.tenant?.name || selectedTenant.name}.${
           result.managementFee
-            ? ` Management fee $${result.managementFee.toLocaleString()} (${result.managementFeePercent ?? 10}%) transferred to PM account.`
+            ? ` Management Fee $${result.managementFee.toLocaleString()} (${result.managementFeePercent ?? 10}%) transferred to PM account.`
             : ''
         }`
       )

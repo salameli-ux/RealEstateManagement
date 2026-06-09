@@ -134,8 +134,8 @@ export default function Payments() {
       <div className="card pm-ledger-panel">
         <div className="pm-ledger-header">
           <div>
-            <h3>PM ledger — management fees</h3>
-            <p className="muted-text">Revenue from property management fees per owner contract, read from payments in the database.</p>
+            <h3>PM ledger — Management Fee</h3>
+            <p className="muted-text">Revenue from Management Fee per owner contract, read from payments in the database.</p>
           </div>
           <div className="financial-summary pm-ledger-summary">
             <div className="financial-stat card">
@@ -149,7 +149,7 @@ export default function Payments() {
           </div>
         </div>
         {pmLedger.entries.length === 0 ? (
-          <p className="muted-text">No management fee entries yet. Fees appear here when tenants submit rent deposits.</p>
+          <p className="muted-text">No Management Fee entries yet. Fees appear here when tenants submit rent deposits.</p>
         ) : (
           <div className="pm-ledger-table-wrap">
             <table className="pm-ledger-table">

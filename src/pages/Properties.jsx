@@ -19,6 +19,7 @@ const defaultForm = {
   baths: '',
   ownerName: '',
   ownerTaxId: '',
+  managementFeePercent: '10',
 }
 
 const statusBadgeClass = (status) =>
@@ -107,6 +108,7 @@ export default function Properties() {
       baths: property.baths,
       ownerName: property.ownerName || '',
       ownerTaxId: property.ownerTaxId || '',
+      managementFeePercent: property.managementFeePercent ?? 10,
     })
     setEditingId(property.id)
     setShowForm(true)
@@ -144,6 +146,7 @@ export default function Properties() {
       baths: Number(formState.baths) || 0,
       ownerName: formState.ownerName.trim() || existing?.ownerName || '',
       ownerTaxId: formState.ownerTaxId.trim() || existing?.ownerTaxId || '',
+      managementFeePercent: Number(formState.managementFeePercent) || existing?.managementFeePercent || 10,
     }
 
     try {
@@ -212,6 +215,19 @@ export default function Properties() {
         <div className="form-group">
           <label>SSN / ITIN / EIN</label>
           <input name="ownerTaxId" value={formState.ownerTaxId} onChange={handleChange} placeholder="123-45-6789" />
+        </div>
+        <div className="form-group">
+          <label>Management fee % (contract)</label>
+          <input
+            name="managementFeePercent"
+            value={formState.managementFeePercent}
+            onChange={handleChange}
+            type="number"
+            min="0"
+            max="100"
+            step="0.5"
+            placeholder="10"
+          />
         </div>
         <div className="form-group">
           <label>Image URL</label>

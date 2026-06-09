@@ -4,7 +4,7 @@ import LedgerRowActions from './LedgerRowActions'
 import LedgerInvoiceModal from './LedgerInvoiceModal'
 import LedgerDocumentsModal from './LedgerDocumentsModal'
 import { buildPropertyLedger, formatLedgerDate, formatLedgerSum, getLedgerOperationCode, getLedgerSumDirection } from '../utils/ledgerBalance'
-import { buildManagementFeeSummary, formatManagementFeeSum } from '../utils/managementFees'
+import { buildManagementFeeSummary, formatManagementFeeSum, formatManagementFeePercent } from '../utils/managementFees'
 
 export default function OwnerDetailsBlock({ property, payments }) {
   const ownerDocuments = property.ownerDocuments || []
@@ -22,14 +22,20 @@ export default function OwnerDetailsBlock({ property, payments }) {
   const ownerPayments = payments.filter((payment) => Number(payment.propertyId) === Number(property.id))
   const ledger = buildPropertyLedger(property.openingBalance, ownerPayments)
   const managementFees = buildManagementFeeSummary(ownerPayments)
+  const contractFeeLabel = formatManagementFeePercent(property.managementFeePercent)
 
   return (
     <>
       <div className="property-list">
         <div className="property-card card owner-details-panel">
           <div className="owner-card-header">
-            <h4>Owner details</h4>
-            <p className="owner-name">{property.ownerName || '—'}</p>
+            <div>
+              <h4>Owner details</h4>
+              <p className="owner-name">{property.ownerName || '—'}</p>
+            </div>
+            <span className="owner-contract-fee-pill" title="Management fee rate from owner contract">
+              Contract: {contractFeeLabel}
+            </span>
           </div>
 
           <div className="tenant-tabs" role="tablist">
@@ -100,6 +106,10 @@ export default function OwnerDetailsBlock({ property, payments }) {
                       <p>${property.zillowEstimate.toLocaleString()}</p>
                     </div>
                     <div>
+                      <span className="meta-label">Management contract</span>
+                      <p>{contractFeeLabel} of rent collected</p>
+                    </div>
+                    <div>
                       <span className="meta-label">Cash ROI</span>
                       <p>{property.purchasePrice ? `${(((property.rent || 0) * 12) / property.purchasePrice * 100).toFixed(1)}%` : '—'}</p>
                     </div>
@@ -131,6 +141,10 @@ export default function OwnerDetailsBlock({ property, payments }) {
 
           {ownerActiveTab === 'management' && (
             <div className="tenant-tab-panel owner-mgmt-panel">
+              <div className="owner-contract-fee-banner">
+                <span className="meta-label">Contract management fee</span>
+                <p><strong>{contractFeeLabel}</strong> of each rent deposit is transferred to the property manager.</p>
+              </div>
               {managementFees.entries.length ? (
                 <>
                   <div className="owner-ledger-summary">

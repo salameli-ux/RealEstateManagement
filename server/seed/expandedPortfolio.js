@@ -29,6 +29,19 @@ const EXPANDED_PROPERTIES = [
   { title: 'Union Park Flat', address: '780 Union Park St, Detroit, MI', ownerName: 'Union Park Investors', ownerTaxId: '38-9920114', type: 'Condo', rent: 1450, beds: 2, baths: 1, price: 185000, yield: 9.4 },
 ]
 
+const CONTRACT_FEE_OPTIONS = [8, 9, 10, 11, 12]
+
+export const EXPANDED_PROPERTY_FEE_BY_TITLE = Object.fromEntries(
+  EXPANDED_PROPERTIES.map((property, index) => [
+    property.title,
+    property.managementFeePercent ?? CONTRACT_FEE_OPTIONS[index % CONTRACT_FEE_OPTIONS.length],
+  ])
+)
+
+function contractFeeForProperty(property, index) {
+  return property.managementFeePercent ?? CONTRACT_FEE_OPTIONS[index % CONTRACT_FEE_OPTIONS.length]
+}
+
 const EXPANDED_TENANTS = [
   { name: 'Avery Collins', email: 'avery.collins@example.com', phone: '(512) 555-0101', taxId: '512-01-4401', status: 'Paid', propertyIndex: 0 },
   { name: 'Jordan Blake', email: 'jordan.blake@example.com', phone: '(617) 555-0102', taxId: '617-02-4402', status: 'Due', propertyIndex: 1 },
@@ -150,7 +163,7 @@ function buildTenantPayload(property, tenantSeed, propertyId) {
   }
 }
 
-function buildTenantPayments(tenantId, propertyId, property, tenantSeed) {
+function buildTenantPayments(tenantId, propertyId, property, tenantSeed, feePercent) {
   const invoiceBase = `INV-EXP-${propertyId}-${tenantId}`
   const rows = [
     [`${invoiceBase}-DEP`, tenantId, propertyId, property.rent * 2, 'USD', 'Deposit', 'Paid', '2025-02-01', '2025-02-01', `Security deposit — ${tenantSeed.name}`],
@@ -161,7 +174,18 @@ function buildTenantPayments(tenantId, propertyId, property, tenantSeed) {
     rows.push([`${invoiceBase}-04`, tenantId, propertyId, property.rent, 'USD', 'Rent', 'Overdue', '2025-04-01', null, `April rent — ${property.title}`])
   }
   rows.push([`${invoiceBase}-HOA`, null, propertyId, 250, 'USD', 'HOA', 'Paid', '2025-04-15', '2025-04-16', `HOA — ${property.title}`])
-  rows.push([`${invoiceBase}-MGMT`, null, propertyId, Math.round(property.rent * 0.1), 'USD', 'Management', 'Paid', '2025-05-31', '2025-05-31', `May PM fee — ${property.title}`])
+  rows.push([
+    `${invoiceBase}-MGMT`,
+    null,
+    propertyId,
+    Math.round(property.rent * (feePercent / 100)),
+    'USD',
+    'Management',
+    'Paid',
+    '2025-05-31',
+    '2025-05-31',
+    `May PM fee (${feePercent}%) — ${property.title}`,
+  ])
   return rows
 }
 
@@ -172,8 +196,9 @@ export function seedExpandedPortfolio(db) {
   const insertProperty = db.prepare(`
     INSERT INTO properties (
       title, address, imageUrl, type, price, purchasePrice, purchaseDate, currentValue, zillowEstimate,
-      yield, status, rent, beds, baths, ownerName, ownerTaxId, openingBalance, ownerDocuments, ownerMailbox
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      yield, status, rent, beds, baths, ownerName, ownerTaxId, openingBalance, ownerDocuments, ownerMailbox,
+      managementFeePercent
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const insertTenant = db.prepare(`
@@ -217,7 +242,8 @@ export function seedExpandedPortfolio(db) {
       property.ownerTaxId,
       Math.round(property.rent * 4),
       JSON.stringify(buildOwnerDocuments(property.title)),
-      JSON.stringify(buildOwnerMailbox(property.ownerName, property.title))
+      JSON.stringify(buildOwnerMailbox(property.ownerName, property.title)),
+      contractFeeForProperty(property, index)
     )
     propertyIds.push(Number(info.lastInsertRowid))
   })
@@ -225,6 +251,7 @@ export function seedExpandedPortfolio(db) {
   EXPANDED_TENANTS.forEach((tenantSeed) => {
     const property = EXPANDED_PROPERTIES[tenantSeed.propertyIndex]
     const propertyId = propertyIds[tenantSeed.propertyIndex]
+    const feePercent = contractFeeForProperty(property, tenantSeed.propertyIndex)
     const tenant = buildTenantPayload(property, tenantSeed, propertyId)
     const info = insertTenant.run(
       tenant.propertyId,
@@ -256,7 +283,7 @@ export function seedExpandedPortfolio(db) {
       tenant.cardExpYear
     )
     const tenantId = Number(info.lastInsertRowid)
-    for (const payment of buildTenantPayments(tenantId, propertyId, property, tenantSeed)) {
+    for (const payment of buildTenantPayments(tenantId, propertyId, property, tenantSeed, feePercent)) {
       if (!paymentExists.get(payment[0])) {
         insertPayment.run(...payment)
       }

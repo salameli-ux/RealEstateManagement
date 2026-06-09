@@ -3,7 +3,7 @@ import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 import bcrypt from 'bcrypt'
-import { seedExpandedPortfolio } from './seed/expandedPortfolio.js'
+import { seedExpandedPortfolio, EXPANDED_PROPERTY_FEE_BY_TITLE } from './seed/expandedPortfolio.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -45,7 +45,8 @@ CREATE TABLE IF NOT EXISTS properties (
   baths INTEGER,
   ownerName TEXT,
   ownerTaxId TEXT,
-  openingBalance INTEGER NOT NULL DEFAULT 0
+  openingBalance INTEGER NOT NULL DEFAULT 0,
+  managementFeePercent REAL
 );
 
 CREATE TABLE IF NOT EXISTS tenants (
@@ -161,6 +162,21 @@ if (!propertyColumns.includes('ownerDocuments')) {
 if (!propertyColumns.includes('ownerMailbox')) {
   db.prepare('ALTER TABLE properties ADD COLUMN ownerMailbox TEXT').run()
 }
+if (!propertyColumns.includes('managementFeePercent')) {
+  db.prepare('ALTER TABLE properties ADD COLUMN managementFeePercent REAL').run()
+}
+
+const seedManagementFeeByTitle = {
+  'Atlanta Duplex': 10,
+  'Miami Condo': 10,
+  'Chicago Townhome': 12,
+  'Peachtree Side Unit': 8,
+  ...EXPANDED_PROPERTY_FEE_BY_TITLE,
+}
+for (const [title, fee] of Object.entries(seedManagementFeeByTitle)) {
+  db.prepare('UPDATE properties SET managementFeePercent = ? WHERE title = ? AND managementFeePercent IS NULL').run(fee, title)
+}
+db.prepare('UPDATE properties SET managementFeePercent = 10 WHERE managementFeePercent IS NULL').run()
 
 const seedOpeningBalanceByTitle = {
   'Atlanta Duplex': 12000,

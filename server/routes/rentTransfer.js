@@ -31,6 +31,7 @@ router.post('/', (req, res) => {
       method,
       amount: result.amount,
       managementFee: result.managementFee,
+      managementFeePercent: result.managementFeePercent,
       payment: result.rentPayment,
       managementPayment: result.managementPayment,
       property: result.property,

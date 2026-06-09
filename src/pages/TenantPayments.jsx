@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import { useAuth } from '../auth/AuthProvider'
@@ -19,6 +19,7 @@ function todayIso() {
 }
 
 function DepositField({ label, value, readOnly = true, name, onChange, type = 'text', placeholder, id }) {
+  const isAmount = name === 'amount'
   return (
     <div className="ach-deposit-field">
       <label htmlFor={id || name}>{label}</label>
@@ -28,11 +29,13 @@ function DepositField({ label, value, readOnly = true, name, onChange, type = 't
         <input
           id={id || name}
           name={name}
-          type={type}
+          type={isAmount ? 'text' : type}
+          inputMode={isAmount ? 'numeric' : undefined}
           value={value}
           onChange={onChange}
+          onWheel={isAmount ? (event) => event.currentTarget.blur() : undefined}
           placeholder={placeholder}
-          required={name === 'amount'}
+          required={isAmount}
         />
       )}
     </div>
@@ -59,6 +62,8 @@ export default function TenantPayments() {
     recurringCycle: 'Monthly',
     recurringDay: '1',
   })
+  const amountInitializedRef = useRef(false)
+  const lastTenantIdRef = useRef(null)
 
   useEffect(() => {
     if (!session?.entityId) return
@@ -94,13 +99,33 @@ export default function TenantPayments() {
 
   useEffect(() => {
     if (!tenant) return
+
+    const switchedTenant = lastTenantIdRef.current !== tenant.id
+    if (switchedTenant) {
+      lastTenantIdRef.current = tenant.id
+      amountInitializedRef.current = false
+    }
+
     setDepositForm((prev) => ({
       ...prev,
-      amount: suggestedAmount ? String(suggestedAmount) : prev.amount,
       paymentDate: todayIso(),
-      reference: prev.reference || `INV-TNT-${tenant.name.split(' ')[0].toUpperCase()}-${todayIso().replace(/-/g, '')}`,
-      description: prev.description || `Rent deposit — ${tenant.unit || tenant.name}`,
+      reference:
+        switchedTenant || !prev.reference
+          ? `INV-TNT-${tenant.name.split(' ')[0].toUpperCase()}-${todayIso().replace(/-/g, '')}`
+          : prev.reference,
+      description:
+        switchedTenant || !prev.description
+          ? `Rent deposit — ${tenant.unit || tenant.name}`
+          : prev.description,
+      amount:
+        !amountInitializedRef.current && suggestedAmount
+          ? String(suggestedAmount)
+          : prev.amount,
     }))
+
+    if (suggestedAmount) {
+      amountInitializedRef.current = true
+    }
   }, [tenant, suggestedAmount])
 
   if (!session || session.role !== 'tenant') {
@@ -133,8 +158,11 @@ export default function TenantPayments() {
         recurringCycle: depositForm.recurringCycle,
         recurringDay: depositForm.recurringEnabled ? Number(depositForm.recurringDay) : null,
       })
+      const feeLabel = result.managementFeePercent != null
+        ? `${result.managementFeePercent}%`
+        : 'contract rate'
       const feeNote = result.managementFee
-        ? ` A 10% management fee ($${result.managementFee.toLocaleString()}) was transferred to the PM account.`
+        ? ` A ${feeLabel} management fee ($${result.managementFee.toLocaleString()}) was transferred to the PM account.`
         : ''
       setSuccessMessage(
         `Payment of $${result.amount.toLocaleString()} posted to the owner ledger.${feeNote}`
@@ -143,6 +171,10 @@ export default function TenantPayments() {
       const refreshed = await fetchTenantPayments(tenant.id)
       setRequests(refreshed.requests || [])
       setPayments(refreshed.payments || [])
+      setDepositForm((prev) => ({
+        ...prev,
+        amount: String(parseMoney(result.tenant?.rent) || result.amount),
+      }))
     } catch (err) {
       setError(err.message || 'Payment failed.')
     } finally {
@@ -196,7 +228,7 @@ export default function TenantPayments() {
             <div className="ach-deposit-section">
               <h4>Deposit details</h4>
               <div className="ach-deposit-grid">
-                <DepositField label="Amount" value={depositForm.amount} readOnly={false} name="amount" onChange={handleFormChange} type="number" id="amount" />
+                <DepositField label="Amount" value={depositForm.amount} readOnly={false} name="amount" onChange={handleFormChange} id="amount" />
                 <DepositField label="Payment date" value={depositForm.paymentDate} readOnly={false} name="paymentDate" onChange={handleFormChange} type="date" id="paymentDate" />
                 <DepositField label="Reference / invoice" value={depositForm.reference} readOnly={false} name="reference" onChange={handleFormChange} id="reference" />
                 <DepositField label="Memo / comment" value={depositForm.description} readOnly={false} name="description" onChange={handleFormChange} placeholder="Rent deposit" id="description" />
@@ -252,7 +284,7 @@ export default function TenantPayments() {
           <div className="card ach-pay-panel">
             <p className="ach-submit-note">
               Demo: submit simulates a completed {payMethod === 'Credit' ? 'credit card' : 'ACH'} deposit.
-              Rent is credited to the owner ledger; 10% is transferred to the PM account.
+              Rent is credited to the owner ledger; the contract management fee is transferred to the PM account.
             </p>
             <div className="tenant-tabs" role="tablist">
               <button className={`tenant-tab ${payMethod === 'ACH' ? 'active' : ''}`} type="button" onClick={() => setPayMethod('ACH')}>ACH transfer</button>

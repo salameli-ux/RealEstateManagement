@@ -13,6 +13,7 @@ function todayIso() {
 }
 
 function DepositField({ label, value, readOnly = true, name, onChange, type = 'text', placeholder, id }) {
+  const isAmount = name === 'amount'
   return (
     <div className="ach-deposit-field">
       <label htmlFor={id || name}>{label}</label>
@@ -22,11 +23,13 @@ function DepositField({ label, value, readOnly = true, name, onChange, type = 't
         <input
           id={id || name}
           name={name}
-          type={type}
+          type={isAmount ? 'text' : type}
+          inputMode={isAmount ? 'numeric' : undefined}
           value={value}
           onChange={onChange}
+          onWheel={isAmount ? (event) => event.currentTarget.blur() : undefined}
           placeholder={placeholder}
-          required={name === 'amount'}
+          required={isAmount}
         />
       )}
     </div>
@@ -135,14 +138,16 @@ export default function AchCredit() {
       const result = await submitRentTransfer({
         tenantId: selectedTenant.id,
         method: payMethod,
-        amount: Number(depositForm.amount),
+        amount: parseMoney(depositForm.amount),
         paymentDate: depositForm.paymentDate,
         reference: depositForm.reference,
         description: depositForm.description,
       })
       setSuccessMessage(
         `Deposit done — $${result.amount.toLocaleString()} recorded for ${result.tenant?.name || selectedTenant.name}.${
-          result.managementFee ? ` Management fee $${result.managementFee.toLocaleString()} (10%) transferred to PM account.` : ''
+          result.managementFee
+            ? ` Management fee $${result.managementFee.toLocaleString()} (${result.managementFeePercent ?? 10}%) transferred to PM account.`
+            : ''
         }`
       )
       setLedgerPropertyId(result.property?.id || selectedTenant.propertyId)
@@ -241,7 +246,7 @@ export default function AchCredit() {
                         <option value="Other">Other</option>
                       </select>
                     </div>
-                    <DepositField label="Amount" value={depositForm.amount} readOnly={false} name="amount" onChange={handleFormChange} type="number" id="amount" />
+                    <DepositField label="Amount" value={depositForm.amount} readOnly={false} name="amount" onChange={handleFormChange} id="amount" />
                     <DepositField label="Payment date" value={depositForm.paymentDate} readOnly={false} name="paymentDate" onChange={handleFormChange} type="date" id="paymentDate" />
                     <DepositField label="Reference / invoice" value={depositForm.reference} readOnly={false} name="reference" onChange={handleFormChange} id="reference" />
                     <DepositField label="Memo / comment" value={depositForm.description} readOnly={false} name="description" onChange={handleFormChange} placeholder="Rent deposit — Unit 12B" id="description" />

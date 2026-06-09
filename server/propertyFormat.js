@@ -17,5 +17,6 @@ export function formatProperty(property) {
     hasCurrentTenant: Number(currentTenantCount) > 0,
     ownerDocuments: parseJsonField(property.ownerDocuments),
     ownerMailbox: parseJsonField(property.ownerMailbox),
+    managementFeePercent: Number(property.managementFeePercent ?? 10),
   }
 }

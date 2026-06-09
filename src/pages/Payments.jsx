@@ -135,7 +135,7 @@ export default function Payments() {
         <div className="pm-ledger-header">
           <div>
             <h3>PM ledger — management fees</h3>
-            <p className="muted-text">Revenue from property management fees (10% of tenant deposits), read from payments in the database.</p>
+            <p className="muted-text">Revenue from property management fees per owner contract, read from payments in the database.</p>
           </div>
           <div className="financial-summary pm-ledger-summary">
             <div className="financial-stat card">

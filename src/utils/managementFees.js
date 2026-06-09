@@ -60,3 +60,15 @@ export function buildManagementFeeSummary(payments) {
 export function formatManagementFeeSum(payment) {
   return `+$${(payment.amount || 0).toLocaleString()}`
 }
+
+export function formatManagementFeePercent(percent, fallback = 10) {
+  const value = Number(percent)
+  if (!Number.isFinite(value)) return `${fallback}%`
+  return Number.isInteger(value) ? `${value}%` : `${value.toFixed(1)}%`
+}
+
+export function resolveManagementFeePercent(property, fallback = 10) {
+  const value = Number(property?.managementFeePercent)
+  if (Number.isFinite(value) && value >= 0 && value <= 100) return value
+  return fallback
+}

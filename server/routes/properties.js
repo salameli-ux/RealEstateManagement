@@ -69,9 +69,10 @@ router.post('/', (req, res) => {
     ownerTaxId,
     ownerDocuments,
     ownerMailbox,
+    managementFeePercent,
   } = req.body
 
-  const stmt = db.prepare(`INSERT INTO properties (title, address, imageUrl, type, price, purchasePrice, purchaseDate, currentValue, zillowEstimate, yield, status, rent, beds, baths, ownerName, ownerTaxId, ownerDocuments, ownerMailbox) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+  const stmt = db.prepare(`INSERT INTO properties (title, address, imageUrl, type, price, purchasePrice, purchaseDate, currentValue, zillowEstimate, yield, status, rent, beds, baths, ownerName, ownerTaxId, ownerDocuments, ownerMailbox, managementFeePercent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
   const info = stmt.run(
     title,
     address,
@@ -90,7 +91,8 @@ router.post('/', (req, res) => {
     ownerName || '',
     ownerTaxId || '',
     JSON.stringify(ownerDocuments || []),
-    JSON.stringify(ownerMailbox || [])
+    JSON.stringify(ownerMailbox || []),
+    Number(managementFeePercent) || 10
   )
   const property = db.prepare('SELECT * FROM properties WHERE id = ?').get(info.lastInsertRowid)
   res.status(201).json(formatProperty({ ...property, currentTenantCount: 0 }))
@@ -120,9 +122,10 @@ router.put('/:id', (req, res) => {
     ownerTaxId,
     ownerDocuments,
     ownerMailbox,
+    managementFeePercent,
   } = req.body
 
-  db.prepare(`UPDATE properties SET title = ?, address = ?, imageUrl = ?, type = ?, price = ?, purchasePrice = ?, purchaseDate = ?, currentValue = ?, zillowEstimate = ?, yield = ?, status = ?, rent = ?, beds = ?, baths = ?, ownerName = ?, ownerTaxId = ?, ownerDocuments = ?, ownerMailbox = ? WHERE id = ?`).run(
+  db.prepare(`UPDATE properties SET title = ?, address = ?, imageUrl = ?, type = ?, price = ?, purchasePrice = ?, purchaseDate = ?, currentValue = ?, zillowEstimate = ?, yield = ?, status = ?, rent = ?, beds = ?, baths = ?, ownerName = ?, ownerTaxId = ?, ownerDocuments = ?, ownerMailbox = ?, managementFeePercent = ? WHERE id = ?`).run(
     title,
     address,
     imageUrl,
@@ -141,6 +144,7 @@ router.put('/:id', (req, res) => {
     ownerTaxId || '',
     JSON.stringify(ownerDocuments ?? parseStoredJson(existing.ownerDocuments)),
     JSON.stringify(ownerMailbox ?? parseStoredJson(existing.ownerMailbox)),
+    Number(managementFeePercent ?? existing.managementFeePercent ?? 10),
     id
   )
 

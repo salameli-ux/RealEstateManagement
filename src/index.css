@@ -3647,6 +3647,38 @@ tbody td {
   letter-spacing: 0.04em;
 }
 
+.owner-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.owner-contract-fee-pill {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.16);
+  color: #bfdbfe;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.owner-contract-fee-banner {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+.owner-contract-fee-banner p {
+  margin: 4px 0 0;
+  color: #e2e8f0;
+  font-size: 0.92rem;
+}
+
 .ledger-sum-credit {
   color: #4ade80;
   font-weight: 600;

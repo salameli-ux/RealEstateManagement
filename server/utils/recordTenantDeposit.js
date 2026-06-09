@@ -1,4 +1,8 @@
-const MANAGEMENT_FEE_RATE = 0.1
+import {
+  calculateManagementFee,
+  formatManagementFeePercent,
+  resolveManagementFeePercent,
+} from './managementFee.js'
 
 function parseActivity(tenant) {
   try {
@@ -23,18 +27,25 @@ export function recordTenantDeposit(db, {
     throw new Error('Tenant is not linked to a property')
   }
 
-  const payAmount = Number(amount)
-  if (!payAmount || payAmount <= 0) {
+  const property = db.prepare('SELECT id, title, address, managementFeePercent FROM properties WHERE id = ?').get(tenant.propertyId)
+  if (!property) {
+    throw new Error('Property not found for this tenant')
+  }
+
+  const payAmount = Math.round(Number(amount))
+  if (!Number.isFinite(payAmount) || payAmount <= 0) {
     throw new Error('Deposit amount is required')
   }
 
+  const feePercent = resolveManagementFeePercent(property)
+  const feeLabel = formatManagementFeePercent(feePercent)
   const today = new Date().toISOString().slice(0, 10)
   const paidDate = paymentDate || today
   const transferLabel = method === 'Credit' ? 'Credit card' : 'ACH'
   const stamp = Date.now()
   const rentInvoice = reference?.trim() || `INV-TNT-${tenant.id}-${stamp}`
   const mgmtInvoice = `INV-MGMT-${tenant.id}-${stamp}`
-  const mgmtAmount = Math.round(payAmount * MANAGEMENT_FEE_RATE)
+  const mgmtAmount = calculateManagementFee(payAmount, feePercent)
 
   const rentDescription =
     description?.trim() ||
@@ -91,13 +102,13 @@ export function recordTenantDeposit(db, {
     'Paid',
     paidDate,
     paidDate,
-    `Property management fee (10%) — ${tenant.name}`
+    `Property management fee (${feeLabel}) — ${tenant.name}`
   )
 
   const activity = parseActivity(tenant)
   activity.unshift(
     `${paidDate} — ${transferLabel} deposit of $${payAmount.toLocaleString()} posted to owner ledger`,
-    `${paidDate} — Management fee $${mgmtAmount.toLocaleString()} (10%) transferred to PM account`
+    `${paidDate} — Management fee $${mgmtAmount.toLocaleString()} (${feeLabel}) transferred to PM account`
   )
   db.prepare('UPDATE tenants SET status = ?, activity = ? WHERE id = ?').run(
     'Paid',
@@ -108,11 +119,11 @@ export function recordTenantDeposit(db, {
   const request = db.prepare('SELECT * FROM tenant_payment_requests WHERE id = ?').get(requestInfo.lastInsertRowid)
   const rentPayment = db.prepare('SELECT * FROM payments WHERE id = ?').get(rentInfo.lastInsertRowid)
   const managementPayment = db.prepare('SELECT * FROM payments WHERE id = ?').get(mgmtInfo.lastInsertRowid)
-  const property = db.prepare('SELECT id, title, address FROM properties WHERE id = ?').get(tenant.propertyId)
 
   return {
     amount: payAmount,
     managementFee: mgmtAmount,
+    managementFeePercent: feePercent,
     method,
     request,
     rentPayment,

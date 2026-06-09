@@ -37,6 +37,29 @@ router.post('/register', async (req, res) => {
   res.status(201).json({ token, user })
 })
 
+router.get('/sign-in-options', (req, res) => {
+  const tenants = db
+    .prepare(`SELECT id, name, unit, isCurrent, propertyId FROM tenants ORDER BY name COLLATE NOCASE`)
+    .all()
+  const owners = db
+    .prepare(`
+      SELECT p.id, p.ownerName, p.address, p.title
+      FROM properties p
+      INNER JOIN (
+        SELECT ownerName, MIN(id) AS id
+        FROM properties
+        WHERE ownerName IS NOT NULL AND ownerName != ''
+        GROUP BY ownerName
+      ) u ON p.id = u.id
+      ORDER BY p.ownerName COLLATE NOCASE
+    `)
+    .all()
+  const pms = db
+    .prepare(`SELECT id, name, email FROM users WHERE role IN ('admin', 'pm') ORDER BY name COLLATE NOCASE`)
+    .all()
+  res.json({ tenants, owners, pms })
+})
+
 router.get('/me', (req, res) => {
   const auth = req.headers.authorization
   if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Authentication required' })

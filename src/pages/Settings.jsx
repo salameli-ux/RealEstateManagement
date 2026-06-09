@@ -1,34 +1,66 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import MainLayout from '../layouts/MainLayout'
-
-const teamMembers = [
-  { name: 'Emma Franklin', role: 'Owner access', status: 'Active' },
-  { name: 'Liam Johnson', role: 'Property manager', status: 'Active' },
-  { name: 'Sophia Lee', role: 'Accountant', status: 'Pending approval' },
-]
-
-const permissions = [
-  { title: 'Full access', description: 'Owner and admin permissions for the platform.', status: 'Enabled' },
-  { title: 'Property manager', description: 'Manage listings, tenants, and workflows.', status: 'Managed' },
-  { title: 'Accounting', description: 'Report viewing and export rights.', status: 'Partial' },
-]
-
-const initialIntegrations = [
-  { name: 'Zillow sync', description: 'Listing sync and pricing feed.', enabled: true },
-  { name: 'Stripe payments', description: 'Collect rent and vendor payments.', enabled: true },
-  { name: 'QuickBooks', description: 'Accounting sync for tax reporting.', enabled: false },
-]
+import { fetchSettings, updateIntegration, updateSettings } from '../services/api'
 
 export default function Settings() {
   const [currency, setCurrency] = useState('USD')
   const [taxRate, setTaxRate] = useState('8.5')
-  const [integrations, setIntegrations] = useState(initialIntegrations)
+  const [teamMembers, setTeamMembers] = useState([])
+  const [permissions, setPermissions] = useState([])
+  const [integrations, setIntegrations] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [savedMessage, setSavedMessage] = useState('')
 
-  const toggleIntegration = (index) => {
-    setIntegrations((current) =>
-      current.map((integration, idx) =>
-        idx === index ? { ...integration, enabled: !integration.enabled } : integration
-      )
+  useEffect(() => {
+    fetchSettings()
+      .then((data) => {
+        setCurrency(data.currency || 'USD')
+        setTaxRate(data.taxRate || '8.5')
+        setTeamMembers(data.teamMembers || [])
+        setPermissions(data.permissions || [])
+        setIntegrations(data.integrations || [])
+      })
+      .catch((err) => {
+        console.error('Failed to load settings', err)
+        setError('Unable to load settings from the database.')
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const toggleIntegration = async (integration) => {
+    try {
+      const updated = await updateIntegration(integration.id, { enabled: !integration.enabled })
+      setIntegrations((current) => current.map((item) => (item.id === updated.id ? updated : item)))
+    } catch (err) {
+      console.error('Failed to update integration', err)
+      setError('Unable to update integration.')
+    }
+  }
+
+  const handleSaveTaxSettings = async () => {
+    setSaving(true)
+    setSavedMessage('')
+    setError('')
+    try {
+      const saved = await updateSettings({ currency, taxRate })
+      setCurrency(saved.currency)
+      setTaxRate(saved.taxRate)
+      setSavedMessage('Tax settings saved.')
+    } catch (err) {
+      console.error('Failed to save settings', err)
+      setError('Unable to save tax settings.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="properties-detail-empty"><p>Loading settings...</p></div>
+      </MainLayout>
     )
   }
 
@@ -42,23 +74,26 @@ export default function Settings() {
         <span className="status-pill">Admin</span>
       </div>
 
+      {error ? <p className="form-error">{error}</p> : null}
+      {savedMessage ? <p className="muted-text">{savedMessage}</p> : null}
+
       <div className="settings-grid">
         <div className="card">
           <h3>Users</h3>
           <p className="card-copy">Invite teammates, assign roles, and lock down access for your portfolio.</p>
 
           {teamMembers.map((member) => (
-            <div key={member.name} className="setting-item">
+            <div key={member.id} className="setting-item">
               <div>
                 <strong>{member.name}</strong>
                 <p>{member.role}</p>
                 <p className="muted-text">{member.status}</p>
               </div>
-              <button className="pill">Edit</button>
+              <button className="pill" type="button">Edit</button>
             </div>
           ))}
 
-          <button className="secondary-button">Invite new user</button>
+          <button className="secondary-button" type="button">Invite new user</button>
         </div>
 
         <div className="card">
@@ -66,16 +101,16 @@ export default function Settings() {
           <p className="card-copy">Set role-based permissions for operations, reporting and asset control.</p>
 
           {permissions.map((permission) => (
-            <div key={permission.title} className="setting-item">
+            <div key={permission.id} className="setting-item">
               <div>
                 <strong>{permission.title}</strong>
                 <p>{permission.description}</p>
               </div>
-              <button className="pill">{permission.status}</button>
+              <button className="pill" type="button">{permission.status}</button>
             </div>
           ))}
 
-          <button className="secondary-button">Review roles</button>
+          <button className="secondary-button" type="button">Review roles</button>
         </div>
 
         <div className="card">
@@ -107,15 +142,17 @@ export default function Settings() {
             <span className="muted-text">Applied to rental income and service fees.</span>
           </div>
 
-          <button className="secondary-button">Save tax settings</button>
+          <button className="secondary-button" type="button" onClick={handleSaveTaxSettings} disabled={saving}>
+            {saving ? 'Saving...' : 'Save tax settings'}
+          </button>
         </div>
 
         <div className="card">
           <h3>Integrations</h3>
           <p className="card-copy">Connect tools and data feeds for payments, accounting and market intelligence.</p>
 
-          {integrations.map((integration, index) => (
-            <div key={integration.name} className="setting-item">
+          {integrations.map((integration) => (
+            <div key={integration.id} className="setting-item">
               <div>
                 <strong>{integration.name}</strong>
                 <p>{integration.description}</p>
@@ -123,14 +160,14 @@ export default function Settings() {
               <button
                 className={`pill ${integration.enabled ? 'pill-positive' : 'pill-negative'}`}
                 type="button"
-                onClick={() => toggleIntegration(index)}
+                onClick={() => toggleIntegration(integration)}
               >
                 {integration.enabled ? 'Connected' : 'Disabled'}
               </button>
             </div>
           ))}
 
-          <button className="secondary-button">Manage integrations</button>
+          <button className="secondary-button" type="button">Manage integrations</button>
         </div>
       </div>
     </MainLayout>

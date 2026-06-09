@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import MainLayout from '../layouts/MainLayout'
 import { fetchPayments, createPayment, fetchTenants, fetchProperties } from '../services/api'
+import { buildManagementFeeSummary, formatManagementFeeSum } from '../utils/managementFees'
+import { formatLedgerDate, getLedgerOperationCode } from '../utils/ledgerBalance'
 
 export default function Payments() {
   const [payments, setPayments] = useState([])
@@ -52,6 +54,8 @@ export default function Payments() {
   const tenantPositionAmount = tenantPaid + tenantDeposit - tenantDue
   const tenantPositionLabel = tenantPositionAmount >= 0 ? 'Balanced' : `Debt $${Math.abs(tenantPositionAmount).toLocaleString()}`
   const tenantPositionStatus = tenantPositionAmount >= 0 ? 'status-paid' : 'status-overdue'
+
+  const pmLedger = useMemo(() => buildManagementFeeSummary(payments), [payments])
 
   useEffect(() => {
     Promise.all([fetchPayments(), fetchTenants(), fetchProperties()])
@@ -118,6 +122,66 @@ export default function Payments() {
           <h2>Payments & Billing</h2>
           <p>Track rent, fees and overdue collections for tenants and properties.</p>
         </div>
+      </div>
+
+      <div className="page-header">
+        <div>
+          <h2>Payments & Billing</h2>
+          <p>Track rent, fees and overdue collections for tenants and properties.</p>
+        </div>
+      </div>
+
+      <div className="card pm-ledger-panel">
+        <div className="pm-ledger-header">
+          <div>
+            <h3>PM ledger — management fees</h3>
+            <p className="muted-text">Revenue from property management fees (10% of tenant deposits), read from payments in the database.</p>
+          </div>
+          <div className="financial-summary pm-ledger-summary">
+            <div className="financial-stat card">
+              <p className="stat-label">Collected</p>
+              <h4>${pmLedger.paidRevenue.toLocaleString()}</h4>
+            </div>
+            <div className="financial-stat card">
+              <p className="stat-label">Pending</p>
+              <h4>${pmLedger.pendingRevenue.toLocaleString()}</h4>
+            </div>
+          </div>
+        </div>
+        {pmLedger.entries.length === 0 ? (
+          <p className="muted-text">No management fee entries yet. Fees appear here when tenants submit rent deposits.</p>
+        ) : (
+          <div className="pm-ledger-table-wrap">
+            <table className="pm-ledger-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Operation</th>
+                  <th>Property</th>
+                  <th>Tenant</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pmLedger.entries.map((payment) => (
+                  <tr key={payment.id}>
+                    <td>{formatLedgerDate(payment.paidDate || payment.dueDate)}</td>
+                    <td>{getLedgerOperationCode(payment)}</td>
+                    <td>{payment.propertyTitle || '—'}</td>
+                    <td>{payment.tenantName || '—'}</td>
+                    <td className="ledger-sum-credit">{formatManagementFeeSum(payment)}</td>
+                    <td>
+                      <span className={`status-badge ${payment.status === 'Paid' ? 'status-paid' : payment.status === 'Overdue' ? 'status-overdue' : 'status-due'}`}>
+                        {payment.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="billing-grid">

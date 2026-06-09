@@ -22,6 +22,7 @@ const request = async (path, options = {}) => {
   return res.status === 204 ? null : res.json()
 }
 
+export const fetchSignInOptions = () => request('/auth/sign-in-options')
 export const login = (email, password) => request('/auth/login', { method: 'POST', body: { email, password } })
 export const register = (name, email, password) => request('/auth/register', { method: 'POST', body: { name, email, password } })
 export const fetchCurrentUser = () => request('/auth/me')
@@ -47,3 +48,10 @@ export const deletePayment = (id) => request(`/payments/${id}`, { method: 'DELET
 
 export const fetchPmAccount = () => request('/pm-account')
 export const submitRentTransfer = (payload) => request('/rent-transfer', { method: 'POST', body: payload })
+export const fetchTenantPayments = (tenantId) => request(`/tenant-payments/${tenantId}`)
+export const submitTenantPayment = (payload) => request('/tenant-payments', { method: 'POST', body: payload })
+export const fetchReports = () => request('/reports')
+export const fetchInsights = () => request('/insights')
+export const fetchSettings = () => request('/settings')
+export const updateSettings = (payload) => request('/settings', { method: 'PUT', body: payload })
+export const updateIntegration = (id, payload) => request(`/settings/integrations/${id}`, { method: 'PUT', body: payload })

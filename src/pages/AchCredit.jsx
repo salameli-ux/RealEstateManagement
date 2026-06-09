@@ -141,7 +141,9 @@ export default function AchCredit() {
         description: depositForm.description,
       })
       setSuccessMessage(
-        `Deposit done — $${result.amount.toLocaleString()} recorded for ${result.tenant?.name || selectedTenant.name}.`
+        `Deposit done — $${result.amount.toLocaleString()} recorded for ${result.tenant?.name || selectedTenant.name}.${
+          result.managementFee ? ` Management fee $${result.managementFee.toLocaleString()} (10%) transferred to PM account.` : ''
+        }`
       )
       setLedgerPropertyId(result.property?.id || selectedTenant.propertyId)
       setTenants((prev) => prev.map((tenant) => (tenant.id === result.tenant.id ? result.tenant : tenant)))

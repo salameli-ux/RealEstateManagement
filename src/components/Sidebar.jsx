@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../auth/AuthProvider'
 
-const links = [
+const pmLinks = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/properties', label: 'Properties' },
   { to: '/tenant-portal', label: 'Tenants' },
@@ -11,14 +12,25 @@ const links = [
   { to: '/settings', label: 'Settings' },
 ]
 
+const tenantLinks = [
+  { to: '/my/tenant', label: 'My portal' },
+  { to: '/my/tenant/payments', label: 'Payments' },
+]
+const ownerLinks = [{ to: '/my/owner', label: 'My property' }]
+
 export default function Sidebar() {
+  const { session } = useAuth()
+  const links = session?.role === 'tenant' ? tenantLinks : session?.role === 'owner' ? ownerLinks : pmLinks
+
   return (
     <div className="sidebar">
       <div className="sidebar-brand">
         <div className="logo-mark">RE</div>
         <div>
           <h2>RealEstate Pulse</h2>
-          <p className="sidebar-copy">Manage properties, tenants and growth from one dashboard.</p>
+          <p className="sidebar-copy">
+            {session?.role === 'tenant' ? 'Tenant portal' : session?.role === 'owner' ? 'Owner portal' : 'Property management'}
+          </p>
         </div>
       </div>
 
@@ -36,7 +48,7 @@ export default function Sidebar() {
 
       <div className="sidebar-footer">
         <span className="status-pill">PRO</span>
-        <p>Optimized for modern property teams and portfolio growth.</p>
+        <p>Demo sign-in — select role on login page.</p>
       </div>
     </div>
   )

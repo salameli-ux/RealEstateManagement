@@ -3,6 +3,7 @@ import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 import bcrypt from 'bcrypt'
+import { seedExpandedPortfolio } from './seed/expandedPortfolio.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -84,6 +85,22 @@ CREATE TABLE IF NOT EXISTS payments (
   createdAt TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS tenant_payment_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tenantId INTEGER NOT NULL,
+  propertyId INTEGER NOT NULL,
+  amount INTEGER NOT NULL,
+  method TEXT NOT NULL DEFAULT 'ACH',
+  paymentDate TEXT,
+  reference TEXT,
+  description TEXT,
+  recurringEnabled INTEGER NOT NULL DEFAULT 0,
+  recurringCycle TEXT,
+  recurringDay INTEGER,
+  status TEXT NOT NULL DEFAULT 'Pending',
+  createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS pm_account (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   companyName TEXT NOT NULL,
@@ -93,6 +110,33 @@ CREATE TABLE IF NOT EXISTS pm_account (
   accountNumber TEXT,
   accountHolder TEXT,
   address TEXT
+);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  currency TEXT NOT NULL DEFAULT 'USD',
+  taxRate TEXT NOT NULL DEFAULT '8.5'
+);
+
+CREATE TABLE IF NOT EXISTS team_members (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  status TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS permission_roles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  status TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS integrations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 0
 );
 `)
 
@@ -111,14 +155,81 @@ if (!propertyColumns.includes('ownerTaxId')) {
 if (!propertyColumns.includes('openingBalance')) {
   db.prepare('ALTER TABLE properties ADD COLUMN openingBalance INTEGER NOT NULL DEFAULT 0').run()
 }
+if (!propertyColumns.includes('ownerDocuments')) {
+  db.prepare('ALTER TABLE properties ADD COLUMN ownerDocuments TEXT').run()
+}
+if (!propertyColumns.includes('ownerMailbox')) {
+  db.prepare('ALTER TABLE properties ADD COLUMN ownerMailbox TEXT').run()
+}
 
 const seedOpeningBalanceByTitle = {
   'Atlanta Duplex': 12000,
   'Miami Condo': 25000,
   'Chicago Townhome': 15000,
+  'Peachtree Side Unit': 8000,
 }
 for (const [title, balance] of Object.entries(seedOpeningBalanceByTitle)) {
   db.prepare('UPDATE properties SET openingBalance = ? WHERE title = ? AND (openingBalance IS NULL OR openingBalance = 0)').run(balance, title)
+}
+
+const seedOwnerDetailsByTitle = {
+  'Atlanta Duplex': {
+    documents: ['Property deed', 'Title insurance', 'HOA agreement', 'Annual tax return'],
+    mailbox: [
+      { subject: 'May owner statement', from: 'Property Management', date: 'Jun 1, 2025', preview: 'Your May rent collection and expense summary is attached.', unread: true },
+      { subject: 'Lease renewal notice', from: 'Property Management', date: 'May 18, 2025', preview: 'John Smith lease is up for renewal in January 2026.', unread: false },
+      { subject: 'Tax document ready', from: 'Accounting', date: 'Apr 30, 2025', preview: 'Your 1099 summary for Atlanta Duplex is available.', unread: false },
+    ],
+  },
+  'Peachtree Side Unit': {
+    documents: ['Property deed — Unit B', 'Title insurance', 'HOA agreement'],
+    mailbox: [
+      { subject: 'Lease signed — eli', from: 'Leasing', date: 'Apr 1, 2025', preview: 'New tenant lease for Unit B is fully executed.', unread: false },
+      { subject: 'May owner statement', from: 'Property Management', date: 'Jun 1, 2025', preview: 'May rent collection summary for Peachtree Side Unit.', unread: true },
+    ],
+  },
+  'Miami Condo': {
+    documents: [
+      'Condo deed — Unit 12B, 18 Ocean Drive',
+      'Sunrise Holdings LLC operating agreement',
+      'Title insurance policy (2020)',
+      'HOA bylaws & 2025 budget',
+      'Windstorm insurance certificate',
+      'Flood elevation certificate',
+      'Miami-Dade property tax bill 2024',
+      'Annual building inspection report',
+      'Parking space assignment — P2-48',
+      'Vendor W-9 — Coastal Maintenance Co.',
+    ],
+    mailbox: [
+      { subject: 'June owner statement ready', from: 'Property Management', date: 'Jun 2, 2025', preview: 'May net income for 18 Ocean Drive: $2,280 collected, $1,585 expenses.', unread: true },
+      { subject: 'Rent received — Kelly Rivera', from: 'Collections', date: 'May 15, 2025', preview: 'May rent of $2,850 posted to your owner ledger.', unread: true },
+      { subject: 'June rent invoice issued', from: 'Billing', date: 'Jun 1, 2025', preview: 'Kelly Rivera June rent invoice generated. Due Jun 1.', unread: false },
+      { subject: 'HOA assessment paid', from: 'Accounting', date: 'Apr 16, 2025', preview: 'Q2 HOA of $485 paid on your behalf for Unit 12B.', unread: false },
+      { subject: 'Insurance renewal quote', from: 'Insurance Desk', date: 'May 12, 2025', preview: 'Please review the updated windstorm policy quote for Ocean Drive.', unread: false },
+      { subject: 'New tenant lease signed', from: 'Leasing', date: 'Apr 10, 2025', preview: 'Kelly Rivera lease for Unit 12B is fully executed.', unread: false },
+      { subject: 'Maintenance completed', from: 'Maintenance', date: 'May 6, 2025', preview: 'HVAC service at 18 Ocean Drive completed. Invoice attached.', unread: false },
+      { subject: 'Q1 performance snapshot', from: 'Property Management', date: 'Apr 1, 2025', preview: 'Your Q1 cash flow report for the Miami portfolio is ready.', unread: false },
+      { subject: 'Tax payment confirmation', from: 'Accounting', date: 'Mar 5, 2025', preview: '2024 property tax of $3,180 paid for 18 Ocean Drive.', unread: false },
+      { subject: 'Listing removed — unit leased', from: 'Leasing', date: 'Mar 16, 2025', preview: 'Miami Condo is now off-market. Kelly Rivera move-in scheduled.', unread: false },
+    ],
+  },
+  'Chicago Townhome': {
+    documents: ['Townhome deed', 'Property survey', 'Mortgage statement'],
+    mailbox: [
+      { subject: 'Overdue rent alert', from: 'Collections', date: 'May 16, 2025', preview: 'Marcus Lee rent payment is overdue for Chicago Townhome.', unread: true },
+      { subject: 'Maintenance completed', from: 'Maintenance', date: 'May 5, 2025', preview: 'HVAC service at Chicago Townhome has been completed.', unread: false },
+      { subject: 'Q1 performance report', from: 'Property Management', date: 'Apr 8, 2025', preview: 'Your quarterly cash flow report is ready to review.', unread: false },
+    ],
+  },
+}
+
+for (const [title, details] of Object.entries(seedOwnerDetailsByTitle)) {
+  db.prepare(`UPDATE properties SET ownerDocuments = ?, ownerMailbox = ? WHERE title = ? AND (ownerDocuments IS NULL OR ownerDocuments = '' OR ownerDocuments = '[]')`).run(
+    JSON.stringify(details.documents),
+    JSON.stringify(details.mailbox),
+    title
+  )
 }
 
 const tenantColumns = db.prepare('PRAGMA table_info(tenants)').all().map((row) => row.name)
@@ -249,8 +360,10 @@ const seedOwnersByTitle = {
 
 const propertiesMissingOwner = db.prepare("SELECT id, title FROM properties WHERE ownerName IS NULL OR ownerName = ''").all()
 for (const property of propertiesMissingOwner) {
-  const owner = seedOwnersByTitle[property.title] || { ownerName: 'Demo Owner', ownerTaxId: '000-00-0000' }
-  db.prepare('UPDATE properties SET ownerName = ?, ownerTaxId = ? WHERE id = ?').run(owner.ownerName, owner.ownerTaxId, property.id)
+  const owner = seedOwnersByTitle[property.title]
+  if (owner) {
+    db.prepare('UPDATE properties SET ownerName = ?, ownerTaxId = ? WHERE id = ?').run(owner.ownerName, owner.ownerTaxId, property.id)
+  }
 }
 
 const propertyCount = db.prepare('SELECT COUNT(*) as count FROM properties').get().count
@@ -262,9 +375,25 @@ if (propertyCount === 0) {
 }
 
 const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count
+const passwordHashDefault = bcrypt.hashSync('123456', 10)
 if (userCount === 0) {
-  const passwordHash = bcrypt.hashSync('123456', 10)
-  db.prepare('INSERT INTO users (name, email, passwordHash, role) VALUES (?, ?, ?, ?)').run('Administrator', 'admin@example.com', passwordHash, 'admin')
+  db.prepare('INSERT INTO users (name, email, passwordHash, role) VALUES (?, ?, ?, ?)').run('Sarah Mitchell', 'admin@example.com', passwordHashDefault, 'admin')
+}
+
+const pmSeedUsers = [
+  { name: 'Sarah Mitchell', email: 'admin@example.com', role: 'admin' },
+  { name: 'James Porter', email: 'james.porter@example.com', role: 'pm' },
+  { name: 'Elena Ruiz', email: 'elena.ruiz@example.com', role: 'pm' },
+]
+const insertPmUser = db.prepare('INSERT INTO users (name, email, passwordHash, role) VALUES (?, ?, ?, ?)')
+const pmUserExists = db.prepare('SELECT id FROM users WHERE email = ?')
+for (const pm of pmSeedUsers) {
+  const existing = pmUserExists.get(pm.email)
+  if (existing) {
+    db.prepare('UPDATE users SET name = ?, role = ? WHERE id = ?').run(pm.name, pm.role, existing.id)
+  } else {
+    insertPmUser.run(pm.name, pm.email, passwordHashDefault, pm.role)
+  }
 }
 
 const tenantCount = db.prepare('SELECT COUNT(*) as count FROM tenants').get().count
@@ -583,5 +712,88 @@ db.prepare(`
       SELECT propertyId FROM tenants WHERE isCurrent = 1 AND propertyId IS NOT NULL
     )
 `).run()
+
+const legacy1060 = db.prepare("SELECT id FROM properties WHERE title = '1060' OR address = '1060'").get()
+if (legacy1060) {
+  db.prepare(`UPDATE properties SET
+    title = 'Peachtree Side Unit',
+    address = '245 Peachtree St Unit B, Atlanta, GA',
+    ownerName = 'Robert Chen',
+    ownerTaxId = '123-45-6789',
+    type = COALESCE(NULLIF(type, ''), 'Apartment'),
+    status = 'Leased',
+    rent = COALESCE(rent, 1850),
+    beds = COALESCE(beds, 1),
+    baths = COALESCE(baths, 1)
+    WHERE id = ?`).run(legacy1060.id)
+  const eli = db.prepare("SELECT id FROM tenants WHERE name = 'eli'").get()
+  if (eli) {
+    db.prepare('UPDATE tenants SET propertyId = ?, unit = ?, isCurrent = 1 WHERE id = ?').run(
+      legacy1060.id,
+      'Unit B — 245 Peachtree St',
+      eli.id
+    )
+  }
+}
+
+const junkPropertyIds = db
+  .prepare(`SELECT id FROM properties WHERE title = 'New Property' OR title = 'Zillow Imported Home' OR ownerName = 'Demo Owner'`)
+  .all()
+for (const { id } of junkPropertyIds) {
+  db.prepare('DELETE FROM payments WHERE propertyId = ?').run(id)
+  db.prepare('UPDATE tenants SET propertyId = NULL, isCurrent = 0 WHERE propertyId = ?').run(id)
+  db.prepare('DELETE FROM properties WHERE id = ?').run(id)
+}
+
+const tenantMailboxByName = {
+  'John Smith': [
+    { subject: 'Rent receipt — June', from: 'Property Management', date: 'Jun 1, 2025', preview: 'Thank you. Your June rent payment was received.', unread: false },
+    { subject: 'Maintenance follow-up', from: 'Maintenance', date: 'Apr 27, 2025', preview: 'Your maintenance request has been marked completed.', unread: false },
+    { subject: 'Lease reminder', from: 'Property Management', date: 'Apr 15, 2025', preview: 'Friendly reminder about your upcoming lease review.', unread: true },
+  ],
+  'Marcus Lee': [
+    { subject: 'Overdue rent notice', from: 'Collections', date: 'May 16, 2025', preview: 'Your May rent payment is overdue. Please pay immediately.', unread: true },
+    { subject: 'Partial payment received', from: 'Billing', date: 'Apr 22, 2025', preview: 'We received your partial rent payment. Balance remains due.', unread: false },
+    { subject: 'Maintenance update', from: 'Maintenance', date: 'May 5, 2025', preview: 'Technician visit for your follow-up request is scheduled.', unread: false },
+  ],
+}
+
+for (const [name, mailbox] of Object.entries(tenantMailboxByName)) {
+  db.prepare(`UPDATE tenants SET mailbox = ? WHERE name = ? AND (mailbox IS NULL OR mailbox = '' OR mailbox = '[]')`).run(JSON.stringify(mailbox), name)
+}
+
+db.prepare(`UPDATE tenants SET contractUrl = ? WHERE name = 'John Smith' AND (contractUrl IS NULL OR contractUrl = '')`).run('https://example.com/contracts/atlanta-duplex.pdf')
+db.prepare(`UPDATE tenants SET contractUrl = ? WHERE name = 'Marcus Lee' AND (contractUrl IS NULL OR contractUrl = '')`).run('https://example.com/contracts/chicago-townhome.pdf')
+
+const settingsCount = db.prepare('SELECT COUNT(*) as count FROM app_settings').get().count
+if (settingsCount === 0) {
+  db.prepare('INSERT INTO app_settings (id, currency, taxRate) VALUES (1, ?, ?)').run('USD', '8.5')
+}
+
+const teamMemberCount = db.prepare('SELECT COUNT(*) as count FROM team_members').get().count
+if (teamMemberCount === 0) {
+  const insertTeamMember = db.prepare('INSERT INTO team_members (name, role, status) VALUES (?, ?, ?)')
+  insertTeamMember.run('Emma Franklin', 'Owner access', 'Active')
+  insertTeamMember.run('Liam Johnson', 'Property manager', 'Active')
+  insertTeamMember.run('Sophia Lee', 'Accountant', 'Pending approval')
+}
+
+const permissionRoleCount = db.prepare('SELECT COUNT(*) as count FROM permission_roles').get().count
+if (permissionRoleCount === 0) {
+  const insertPermission = db.prepare('INSERT INTO permission_roles (title, description, status) VALUES (?, ?, ?)')
+  insertPermission.run('Full access', 'Owner and admin permissions for the platform.', 'Enabled')
+  insertPermission.run('Property manager', 'Manage listings, tenants, and workflows.', 'Managed')
+  insertPermission.run('Accounting', 'Report viewing and export rights.', 'Partial')
+}
+
+const integrationCount = db.prepare('SELECT COUNT(*) as count FROM integrations').get().count
+if (integrationCount === 0) {
+  const insertIntegration = db.prepare('INSERT INTO integrations (name, description, enabled) VALUES (?, ?, ?)')
+  insertIntegration.run('Zillow sync', 'Listing sync and pricing feed.', 1)
+  insertIntegration.run('Stripe payments', 'Collect rent and vendor payments.', 1)
+  insertIntegration.run('QuickBooks', 'Accounting sync for tax reporting.', 0)
+}
+
+seedExpandedPortfolio(db)
 
 export default db

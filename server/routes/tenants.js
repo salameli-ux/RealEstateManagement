@@ -5,7 +5,7 @@ import { formatTenant } from '../tenantFormat.js'
 const router = express.Router()
 
 router.get('/', (req, res) => {
-  const tenants = db.prepare('SELECT * FROM tenants ORDER BY id DESC').all().map(formatTenant)
+  const tenants = db.prepare('SELECT * FROM tenants ORDER BY name COLLATE NOCASE, id').all().map(formatTenant)
   res.json(tenants)
 })
 

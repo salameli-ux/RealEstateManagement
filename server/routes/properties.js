@@ -1,8 +1,18 @@
 import express from 'express'
 import db from '../db.js'
 import { formatTenant } from '../tenantFormat.js'
+import { formatProperty } from '../propertyFormat.js'
 
 const router = express.Router()
+
+const parseStoredJson = (value, fallback = []) => {
+  if (!value) return fallback
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
 
 router.get('/', (req, res) => {
   const properties = db
@@ -10,14 +20,10 @@ router.get('/', (req, res) => {
       SELECT p.*,
         (SELECT COUNT(*) FROM tenants t WHERE t.propertyId = p.id AND t.isCurrent = 1) AS currentTenantCount
       FROM properties p
-      ORDER BY p.id DESC
+      ORDER BY p.address COLLATE NOCASE, p.id
     `)
     .all()
-    .map(({ currentTenantCount, ...property }) => ({
-      ...property,
-      currentTenantCount,
-      hasCurrentTenant: currentTenantCount > 0,
-    }))
+    .map(formatProperty)
   res.json(properties)
 })
 
@@ -40,8 +46,7 @@ router.get('/:id', (req, res) => {
     `)
     .get(req.params.id)
   if (!row) return res.status(404).json({ error: 'Property not found' })
-  const { currentTenantCount, ...property } = row
-  res.json({ ...property, currentTenantCount, hasCurrentTenant: currentTenantCount > 0 })
+  res.json(formatProperty(row))
 })
 
 router.post('/', (req, res) => {
@@ -62,9 +67,11 @@ router.post('/', (req, res) => {
     baths,
     ownerName,
     ownerTaxId,
+    ownerDocuments,
+    ownerMailbox,
   } = req.body
 
-  const stmt = db.prepare(`INSERT INTO properties (title, address, imageUrl, type, price, purchasePrice, purchaseDate, currentValue, zillowEstimate, yield, status, rent, beds, baths, ownerName, ownerTaxId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+  const stmt = db.prepare(`INSERT INTO properties (title, address, imageUrl, type, price, purchasePrice, purchaseDate, currentValue, zillowEstimate, yield, status, rent, beds, baths, ownerName, ownerTaxId, ownerDocuments, ownerMailbox) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
   const info = stmt.run(
     title,
     address,
@@ -81,10 +88,12 @@ router.post('/', (req, res) => {
     beds || 0,
     baths || 0,
     ownerName || '',
-    ownerTaxId || ''
+    ownerTaxId || '',
+    JSON.stringify(ownerDocuments || []),
+    JSON.stringify(ownerMailbox || [])
   )
   const property = db.prepare('SELECT * FROM properties WHERE id = ?').get(info.lastInsertRowid)
-  res.status(201).json(property)
+  res.status(201).json(formatProperty({ ...property, currentTenantCount: 0 }))
 })
 
 router.put('/:id', (req, res) => {
@@ -109,9 +118,11 @@ router.put('/:id', (req, res) => {
     baths,
     ownerName,
     ownerTaxId,
+    ownerDocuments,
+    ownerMailbox,
   } = req.body
 
-  db.prepare(`UPDATE properties SET title = ?, address = ?, imageUrl = ?, type = ?, price = ?, purchasePrice = ?, purchaseDate = ?, currentValue = ?, zillowEstimate = ?, yield = ?, status = ?, rent = ?, beds = ?, baths = ?, ownerName = ?, ownerTaxId = ? WHERE id = ?`).run(
+  db.prepare(`UPDATE properties SET title = ?, address = ?, imageUrl = ?, type = ?, price = ?, purchasePrice = ?, purchaseDate = ?, currentValue = ?, zillowEstimate = ?, yield = ?, status = ?, rent = ?, beds = ?, baths = ?, ownerName = ?, ownerTaxId = ?, ownerDocuments = ?, ownerMailbox = ? WHERE id = ?`).run(
     title,
     address,
     imageUrl,
@@ -128,11 +139,20 @@ router.put('/:id', (req, res) => {
     baths || 0,
     ownerName || '',
     ownerTaxId || '',
+    JSON.stringify(ownerDocuments ?? parseStoredJson(existing.ownerDocuments)),
+    JSON.stringify(ownerMailbox ?? parseStoredJson(existing.ownerMailbox)),
     id
   )
 
-  const property = db.prepare('SELECT * FROM properties WHERE id = ?').get(id)
-  res.json(property)
+  const row = db
+    .prepare(`
+      SELECT p.*,
+        (SELECT COUNT(*) FROM tenants t WHERE t.propertyId = p.id AND t.isCurrent = 1) AS currentTenantCount
+      FROM properties p
+      WHERE p.id = ?
+    `)
+    .get(id)
+  res.json(formatProperty(row))
 })
 
 router.delete('/:id', (req, res) => {

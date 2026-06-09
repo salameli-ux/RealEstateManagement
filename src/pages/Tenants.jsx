@@ -3,59 +3,9 @@ import { NavLink } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import { fetchTenants, createTenant } from '../services/api'
 
-const initialTenants = [
-  {
-    name: 'John Smith',
-    unit: 'Atlanta Duplex',
-    email: 'john.smith@example.com',
-    phone: '(404) 555-0178',
-    taxId: '456-78-9012',
-    leaseStart: 'Jan 5, 2025',
-    leaseEnd: 'Jan 4, 2026',
-    rent: '$3,250',
-    status: 'Paid',
-    nextDue: 'Jun 1',
-    contract: '12 month lease',
-    cycle: 'Monthly',
-    documents: ['Lease agreement', 'ID copy', 'Move-in checklist'],
-    activity: ['May 1 - Rent received', 'Apr 27 - Maintenance request completed', 'Apr 15 - Lease reminder sent'],
-  },
-  {
-    name: 'Kelly Rivera',
-    unit: 'Miami Condo',
-    email: 'kelly.rivera@example.com',
-    phone: '(305) 555-0231',
-    taxId: '789-01-2345',
-    leaseStart: 'Mar 15, 2025',
-    leaseEnd: 'Mar 14, 2026',
-    rent: '$2,100',
-    status: 'Due',
-    nextDue: 'May 29',
-    contract: '12 month lease',
-    cycle: 'Monthly',
-    documents: ['Lease agreement', 'Security deposit receipt', 'Pet addendum'],
-    activity: ['Apr 20 - Payment reminder sent', 'Apr 10 - Lease signed', 'Mar 18 - Welcome email sent'],
-  },
-  {
-    name: 'Marcus Lee',
-    unit: 'Chicago Townhome',
-    email: 'marcus.lee@example.com',
-    phone: '(312) 555-0450',
-    taxId: '321-54-6789',
-    leaseStart: 'Feb 1, 2025',
-    leaseEnd: 'Jan 31, 2026',
-    rent: '$2,880',
-    status: 'Overdue',
-    nextDue: 'May 16',
-    contract: '11 month lease',
-    cycle: 'Monthly',
-    documents: ['Lease agreement', 'Insurance proof', 'Payment authorization'],
-    activity: ['May 16 - Payment overdue', 'May 5 - Maintenance follow-up', 'Apr 22 - Rent partial payment'],
-  },
-]
-
 export default function Tenants() {
-  const [tenants, setTenants] = useState(initialTenants)
+  const [tenants, setTenants] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     name: '',
@@ -78,6 +28,7 @@ export default function Tenants() {
       .catch((error) => {
         console.error('Failed to load tenants', error)
       })
+      .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -163,7 +114,12 @@ export default function Tenants() {
       )}
 
       <div className="tenant-list">
-        {tenants.map((tenant) => (
+        {loading ? (
+          <p className="muted-text">Loading tenants...</p>
+        ) : tenants.length === 0 ? (
+          <p className="muted-text">No tenants in the database yet.</p>
+        ) : (
+          tenants.map((tenant) => (
           <NavLink key={tenant.id} to={`/ach-credit?tenantId=${tenant.id}`} className="tenant-item tenant-item-link">
             <div className="property-item-summary">
               <div>
@@ -175,7 +131,8 @@ export default function Tenants() {
               </span>
             </div>
           </NavLink>
-        ))}
+          ))
+        )}
       </div>
     </MainLayout>
   )

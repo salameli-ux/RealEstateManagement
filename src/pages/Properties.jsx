@@ -3,66 +3,6 @@ import { NavLink, Outlet } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import { fetchProperties, createProperty, updateProperty, deleteProperty } from '../services/api'
 
-const initialProperties = [
-  {
-    id: 1,
-    title: 'Atlanta Duplex',
-    address: '245 Peachtree St, Atlanta, GA',
-    imageUrl: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80',
-    type: 'Duplex',
-    price: 540000,
-    purchasePrice: 495000,
-    purchaseDate: '2018-03-22',
-    currentValue: 610000,
-    zillowEstimate: 560000,
-    yield: 5.7,
-    status: 'Leased',
-    rent: 3250,
-    beds: 4,
-    baths: 2,
-    ownerName: 'Robert Chen',
-    ownerTaxId: '123-45-6789',
-  },
-  {
-    id: 2,
-    title: 'Miami Condo',
-    address: '18 Ocean Drive, Miami, FL',
-    imageUrl: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=800&q=80',
-    type: 'Condo',
-    price: 420000,
-    purchasePrice: 385000,
-    purchaseDate: '2020-05-10',
-    currentValue: 455000,
-    zillowEstimate: 430000,
-    yield: 6.0,
-    status: 'Available',
-    rent: 2100,
-    beds: 2,
-    baths: 2,
-    ownerName: 'Sunrise Holdings LLC',
-    ownerTaxId: '87-6543210',
-  },
-  {
-    id: 3,
-    title: 'Chicago Townhome',
-    address: '790 Lakeview Ave, Chicago, IL',
-    imageUrl: 'https://images.unsplash.com/photo-1494527494455-0f29a669841a?auto=format&fit=crop&w=800&q=80',
-    type: 'Townhome',
-    price: 470000,
-    purchasePrice: 430000,
-    purchaseDate: '2019-09-15',
-    currentValue: 505000,
-    zillowEstimate: 485000,
-    yield: 5.8,
-    status: 'Renewal',
-    rent: 2880,
-    beds: 3,
-    baths: 2,
-    ownerName: 'Patricia Williams',
-    ownerTaxId: '912-34-5678',
-  },
-]
-
 const defaultForm = {
   title: '',
   address: '',
@@ -91,61 +31,9 @@ const isPropertyOccupied = (property) => {
   return !['Available', 'Vacant'].includes(property.status)
 }
 
-const zillowImagePool = [
-  'https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=640&q=80',
-  'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=640&q=80',
-  'https://images.unsplash.com/photo-1560184897-a045d7ebb20d?auto=format&fit=crop&w=640&q=80',
-  'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=640&q=80',
-]
-
-const mockZillowLookup = ({ title, address, price = 450000 }) => {
-  const key = `${title}`.toLowerCase() + ` ${address}`.toLowerCase()
-  const sampleData = [
-    {
-      match: 'atlanta duplex 245 peachtree st, atlanta, ga',
-      type: 'Duplex',
-      purchaseDate: '2018-05-12',
-      currentValue: 610000,
-      imageUrl: zillowImagePool[0],
-      zillowEstimate: 615000,
-      yield: 5.5,
-    },
-    {
-      match: 'miami condo 18 ocean drive, miami, fl',
-      type: 'Condo',
-      purchaseDate: '2020-11-03',
-      currentValue: 455000,
-      imageUrl: zillowImagePool[1],
-      zillowEstimate: 462000,
-      yield: 6.1,
-    },
-    {
-      match: 'chicago townhome 790 lakeview ave, chicago, il',
-      type: 'Townhome',
-      purchaseDate: '2019-02-20',
-      currentValue: 505000,
-      imageUrl: zillowImagePool[2],
-      zillowEstimate: 512000,
-      yield: 5.9,
-    },
-  ]
-
-  const found = sampleData.find((item) => key.includes(item.match))
-  if (found) return found
-
-  return {
-    type: title.toLowerCase().includes('condo') ? 'Condo' : 'Single Family',
-    purchaseDate: `${2020 + Math.floor(Math.random() * 4)}-${String(1 + Math.floor(Math.random() * 12)).padStart(2, '0')}-${String(1 + Math.floor(Math.random() * 27)).padStart(2, '0')}`,
-    currentValue: Number((price * (1 + Math.random() * 0.15)).toFixed(0)),
-    purchasePrice: Number((price * (0.8 + Math.random() * 0.15)).toFixed(0)),
-    imageUrl: zillowImagePool[Math.floor(Math.random() * zillowImagePool.length)],
-    zillowEstimate: Number((price * (1 + Math.random() * 0.1)).toFixed(0)),
-    yield: Number((4.5 + Math.random() * 1.5).toFixed(1)),
-  }
-}
-
 export default function Properties() {
-  const [properties, setProperties] = useState(initialProperties)
+  const [properties, setProperties] = useState([])
+  const [loading, setLoading] = useState(true)
   const [formState, setFormState] = useState(defaultForm)
   const [editingId, setEditingId] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -159,6 +47,9 @@ export default function Properties() {
       })
       .catch((error) => {
         console.error('Failed to load properties', error)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
       })
 
     return () => {
@@ -236,21 +127,17 @@ export default function Properties() {
   const handleAddProperty = async (event) => {
     event.preventDefault()
     const existing = editingId ? properties.find((item) => Number(item.id) === Number(editingId)) : null
-    const priceValue = Number(formState.price) || existing?.price || 450000
-    const zillowData = existing
-      ? null
-      : mockZillowLookup({ title: formState.title, address: formState.address, price: priceValue })
     const payload = {
       title: formState.title.trim() || existing?.title || 'New Property',
-      address: formState.address.trim() || existing?.address || 'Unknown address',
-      imageUrl: formState.imageUrl.trim() || existing?.imageUrl || zillowData?.imageUrl,
-      type: formState.type || existing?.type || zillowData?.type,
-      price: priceValue,
-      purchasePrice: Number(formState.purchasePrice) || existing?.purchasePrice || zillowData?.purchasePrice,
-      purchaseDate: formState.purchaseDate || existing?.purchaseDate || zillowData?.purchaseDate,
-      zillowEstimate: Number(formState.zillowEstimate) || existing?.zillowEstimate || zillowData?.zillowEstimate,
-      currentValue: existing?.currentValue ?? zillowData?.currentValue,
-      yield: Number(formState.yield) || existing?.yield || zillowData?.yield,
+      address: formState.address.trim() || existing?.address || '',
+      imageUrl: formState.imageUrl.trim() || existing?.imageUrl || '',
+      type: formState.type || existing?.type || 'Single Family',
+      price: Number(formState.price) || existing?.price || 0,
+      purchasePrice: Number(formState.purchasePrice) || existing?.purchasePrice || 0,
+      purchaseDate: formState.purchaseDate || existing?.purchaseDate || '',
+      zillowEstimate: Number(formState.zillowEstimate) || existing?.zillowEstimate || 0,
+      currentValue: existing?.currentValue ?? (Number(formState.price) || 0),
+      yield: Number(formState.yield) || existing?.yield || 0,
       status: formState.status || 'Available',
       rent: Number(formState.rent) || 0,
       beds: Number(formState.beds) || 0,
@@ -278,27 +165,6 @@ export default function Properties() {
     }
   }
 
-  const refreshZillow = async (title) => {
-    const current = properties.find((property) => property.title === title)
-    if (!current) return
-    const adjustment = 1 + (Math.random() * 0.08 - 0.02)
-    const updatedEstimate = Math.round((current.price || 0) * adjustment / 1000) * 1000
-    const updatedImage = zillowImagePool[Math.floor(Math.random() * zillowImagePool.length)]
-    const updatedProperty = {
-      ...current,
-      zillowEstimate: updatedEstimate,
-      yield: Number((current.yield + (Math.random() * 0.6 - 0.2)).toFixed(1)),
-      imageUrl: updatedImage,
-    }
-
-    try {
-      const saved = await updateProperty(current.id, updatedProperty)
-      setProperties((prev) => prev.map((property) => (property.id === current.id ? saved : property)))
-    } catch (error) {
-      console.error('Failed to refresh Zillow data', error)
-    }
-  }
-
   const handleDeleteProperty = async (id) => {
     try {
       await deleteProperty(id)
@@ -308,32 +174,6 @@ export default function Properties() {
       }
     } catch (error) {
       console.error('Failed to delete property', error)
-    }
-  }
-
-  const importFromZillow = async () => {
-    const placeholderProperty = {
-      title: 'Zillow Imported Home',
-      address: '765 Market St, San Francisco, CA',
-      imageUrl: zillowImagePool[Math.floor(Math.random() * zillowImagePool.length)],
-      type: 'Single Family',
-      price: 975000,
-      purchasePrice: 860000,
-      currentValue: 1015000,
-      zillowEstimate: 990000,
-      purchaseDate: '2021-08-10',
-      yield: 4.8,
-      status: 'Available',
-      rent: 4200,
-      beds: 4,
-      baths: 3,
-    }
-
-    try {
-      const created = await createProperty(placeholderProperty)
-      setProperties((prev) => [created, ...prev])
-    } catch (error) {
-      console.error('Failed to import Zillow property', error)
     }
   }
 
@@ -453,7 +293,12 @@ export default function Properties() {
           </div>
           <div className="contact-list">
             <div className="contact-group">
-              {sortedProperties.map((property) => (
+              {loading ? (
+                <div className="ach-list-empty">Loading properties...</div>
+              ) : sortedProperties.length === 0 ? (
+                <div className="ach-list-empty">No properties in the database yet.</div>
+              ) : (
+                sortedProperties.map((property) => (
                 <NavLink
                   key={property.id}
                   to={`/properties/${property.id}`}
@@ -467,7 +312,8 @@ export default function Properties() {
                     <span className="contact-row-title">{property.address}</span>
                   </div>
                 </NavLink>
-              ))}
+              ))
+              )}
             </div>
           </div>
         </aside>
